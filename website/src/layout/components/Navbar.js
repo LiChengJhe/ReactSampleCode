@@ -3,8 +3,7 @@ import React, { Component } from 'react';
 import { AppBar, Tab, Tabs } from '@material-ui/core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faGlobe, faFlag } from '@fortawesome/free-solid-svg-icons'
-import { withRouter } from "react-router-dom";
-
+import { withRouter } from 'react-router-dom';
 export class Navbar extends Component {
   constructor(props) {
     super(props);
@@ -14,10 +13,13 @@ export class Navbar extends Component {
   }
 
   tabChange = (event, nextTab) => {
-    this.setState({ curTab: nextTab });
+
+    this.setState((state) => ({ curTab: nextTab }));
     this.props.history.push(nextTab);
   };
+
   render() {
+    console.log(this.props);
     return (
       <>
         <AppBar position='static' >

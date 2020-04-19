@@ -1,33 +1,24 @@
-import React, { Component } from 'react';
-import Content from './layout/components/Content';
+import React from 'react';
 import './App.css';
-import { BrowserRouter, Switch } from 'react-router-dom';
-import { Navbar } from './layout/components/Navbar';
+import Navbar  from './layout/components/Navbar';
 import { Grid } from '@material-ui/core';
+import { Content } from './layout/components/Content';
 
 
-export default class App extends Component {
-
-
-  render() {
+export function App() {
     return (
-      <BrowserRouter>
-        <Switch>
-          <>
+      
             <Grid container spacing={0}>
               <Grid item xs={12}>
-                <Navbar/>
+                <Navbar />
               </Grid>
               <Grid item xs={12}>
-                <Content/>
+                <Content />
               </Grid>
             </Grid>
-          </ >
-        </Switch>
-      </BrowserRouter>
+    
     );
-  }
-
 }
+
 
 

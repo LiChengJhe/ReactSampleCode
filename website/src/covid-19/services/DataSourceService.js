@@ -3,16 +3,16 @@ import _ from 'lodash';
 import axios from 'axios';
 import { from } from 'rxjs';
 import { map } from 'rxjs/operators';
-class DataSourceService {
+export default class DataSourceService {
     covid19MathdroApi = 'https://covid19.mathdro.id/api';
     coronaNinjaApi = 'https://corona.lmao.ninja';
 
     getCountries() {
         const promise = axios.get(`${this.covid19MathdroApi}/countries`);
         return from(promise).pipe(
-            map((list) => {
+            map((res) => {
                 const countries = [];
-                list.data.countries.forEach(element => {
+                res.data.countries.forEach(element => {
                     countries.push({
                         name: _.replace(element.name, '*', ''),
                         iso2: element.iso2,
@@ -26,10 +26,10 @@ class DataSourceService {
     getHistoricalCountryStats() {
         const promise = axios.get(`${this.coronaNinjaApi}/v2/historical`);
         return from(promise).pipe(
-            map((list) => {
+            map((res) => {
 
                 let countryStatsMap = {};
-                list.forEach(element => {
+                res.data.forEach(element => {
                     const queryKey = `${element.country}-${element.province}`;
 
                     countryStatsMap[queryKey] = {
@@ -39,7 +39,7 @@ class DataSourceService {
 
                     // tslint:disable-next-line: forin
                     for (const item in element.timeline.cases) {
-                        countryStatsMap[queryKey].Stats.push({
+                        countryStatsMap[queryKey].stats.push({
                             confirmed: element.timeline.cases[item],
                             recovered: element.timeline.recovered[item],
                             deaths: element.timeline.deaths[item],
@@ -53,13 +53,13 @@ class DataSourceService {
                 countryStatsMap = {};
 
                 countryStats.forEach(element => {
-                    const queryKey = `${element.Country.Name}`;
+                    const queryKey = `${element.country.Name}`;
                     if (countryStatsMap[queryKey]) {
 
-                        countryStatsMap[queryKey].Stats.forEach((item, index) => {
-                            item.confirmed += element.Stats[index].confirmed;
-                            item.deaths += element.Stats[index].deaths;
-                            item.recovered += element.Stats[index].recovered;
+                        countryStatsMap[queryKey].stats.forEach((item, index) => {
+                            item.confirmed += element.stats[index].confirmed;
+                            item.deaths += element.stats[index].deaths;
+                            item.recovered += element.stats[index].recovered;
                         });
                     } else {
                         countryStatsMap[queryKey] = element;
@@ -69,7 +69,7 @@ class DataSourceService {
                 countryStats = _.values(countryStatsMap);
 
                 countryStats.forEach(element => {
-                    element.Stats.forEach(item => {
+                    element.stats.forEach(item => {
                         item.recoveredRate = _.round((item.recovered / item.confirmed) * 100, 2);
                         item.deathRate = _.round((item.deaths / item.confirmed) * 100, 2);
                     });
@@ -84,14 +84,15 @@ class DataSourceService {
         const promise = axios.get(`${this.coronaNinjaApi}/v2/historical/${country.iso3}`);
   
         return from(promise ).pipe(
-          map((data) => {
-            const countryStat = { Country: { Name: data.country }, Stats: [] };
+          map((res) => {
+            const  data = res.data;
+            const countryStat = { country: { name: data.country }, stats: [] };
 
             for (const item in data.timeline.cases) {
               const confirmed = data.timeline.cases[item];
               const recovered = data.timeline.recovered[item];
               const deaths = data.timeline.deaths[item];
-              countryStat.Stats.push({
+              countryStat.stats.push({
                 confirmed: confirmed,
                 recovered: recovered,
                 deaths: deaths,
@@ -109,15 +110,16 @@ class DataSourceService {
       getGlobalHistoricalStats() {
         const promise = axios.get(`${this.coronaNinjaApi}/v2/historical/all`);
         return from(promise).pipe(
-          map((list) => {
+          map((res) => {
+            const  data = res.data;
             const stats = [];
-            for (const item in list.cases) {
+            for (const item in data.cases) {
               stats.push({
-                confirmed: list.cases[item],
-                recovered: list.recovered[item],
-                deaths: list.deaths[item],
-                recoveredRate: _.round((list.recovered[item] / list.cases[item]) * 100, 2),
-                deathRate: _.round((list.deaths[item] / list.cases[item]) * 100, 2),
+                confirmed: data.cases[item],
+                recovered: data.recovered[item],
+                deaths: data.deaths[item],
+                recoveredRate: _.round((data.recovered[item] / data.cases[item]) * 100, 2),
+                deathRate: _.round((data.deaths[item] / data.cases[item]) * 100, 2),
                 lastUpdate: new Date(item)
               });
             }
@@ -136,11 +138,11 @@ class DataSourceService {
           deathRate: 0,
           criticalRate: 0,
           mildRate: 0,
-          lastUpdate: _.first(_.last(countryStats).Stats).lastUpdate
+          lastUpdate: _.first(_.last(countryStats).stats).lastUpdate
         };
     
         countryStats.forEach(item => {
-          const stat = _.last(item.Stats);
+          const stat = _.last(item.stats);
           globalStat.confirmed += stat.confirmed;
           globalStat.recovered += stat.recovered;
           globalStat.deaths += stat.deaths;
@@ -159,27 +161,27 @@ class DataSourceService {
       getCountryStat(country){
         const promise = axios.get(`${this.coronaNinjaApi}/v2/countries/${country.iso3}`);
         return from(promise).pipe(
-          map((item) => ({
+          map((res) => ({
             country: {
-              name: item.country,
-              iso2: item.countryInfo.iso2,
-              iso3: item.countryInfo.iso3
+              name: res.data.country,
+              iso2: res.data.countryInfo.iso2,
+              iso3: res.data.countryInfo.iso3
             },
             stats: [
               {
-                confirmed: item.todayCases,
-                deaths: item.todaydeaths
+                confirmed: res.data.todayCases,
+                deaths: res.data.todaydeaths
               },
               {
-                confirmed: item.cases,
-                recovered: item.recovered,
-                deaths: item.deaths,
-                critical: item.critical,
-                recoveredRate: _.round((item.recovered / item.cases) * 100, 2),
-                deathRate: _.round((item.deaths / item.cases) * 100, 2),
-                criticalRate: _.round((item.critical / item.cases) * 100, 2),
-                mildRate: _.round(100 - (item.critical / item.cases) * 100, 2),
-                lastUpdate: new Date(item.updated)
+                confirmed: res.data.cases,
+                recovered: res.data.recovered,
+                deaths: res.data.deaths,
+                critical: res.data.critical,
+                recoveredRate: _.round((res.data.recovered / res.data.cases) * 100, 2),
+                deathRate: _.round((res.data.deaths / res.data.cases) * 100, 2),
+                criticalRate: _.round((res.data.critical / res.data.cases) * 100, 2),
+                mildRate: _.round(100 - (res.data.critical / res.data.cases) * 100, 2),
+                lastUpdate: new Date(res.data.updated)
               }
             ]
           })));
@@ -189,8 +191,8 @@ class DataSourceService {
       getCountryStats() {
         const promise = axios.get(`${this.coronaNinjaApi}/v2/countries`);
         return from(promise).pipe(
-          map((list) =>
-            list.map(item =>
+          map((res) =>
+            res.data.map(item =>
               ({
                 country: {
                   name: item.country,
@@ -215,7 +217,7 @@ class DataSourceService {
                   }]
     
               }))),
-          map((list) => _.orderBy(list, o => _.last(o.Stats).confirmed, 'desc'))
+          map((list) => _.orderBy(list, o => _.last(o.stats).confirmed, 'desc'))
         );
       }
 }
