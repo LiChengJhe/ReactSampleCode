@@ -1,17 +1,20 @@
 
-import React, { Component, Fragment } from 'react';
+import React, { Component } from 'react';
 import { Box } from '@material-ui/core';
+import { dataSourceService } from '../services/DataSourceService';
 export default class GlobalPage extends Component {
-    constructor(props) {
-        super(props);
-       
 
+    componentDidMount() {
+        dataSourceService.getCountries().subscribe((data) => {
+            console.log(data);
+        });
     }
     render() {
+
         return (
-            <Fragment>
+            <>
                 < Box>GlobalPage</ Box>
-            </Fragment>
+            </>
         );
     }
 }
