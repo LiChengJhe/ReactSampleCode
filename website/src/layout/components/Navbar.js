@@ -19,7 +19,7 @@ export class Navbar extends Component {
   };
 
   render() {
-    console.log(this.props);
+   
     return (
       <>
         <AppBar position='static' >

@@ -5,7 +5,7 @@ import { Grid } from '@material-ui/core';
 import { Content } from './layout/components/Content';
 
 
-export function App() {
+export  function App() {
     return (
       
             <Grid container spacing={0}>

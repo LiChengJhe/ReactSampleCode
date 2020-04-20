@@ -3,7 +3,7 @@ import _ from 'lodash';
 import axios from 'axios';
 import { from } from 'rxjs';
 import { map } from 'rxjs/operators';
-export default class DataSourceService {
+export class DataSourceService {
     covid19MathdroApi = 'https://covid19.mathdro.id/api';
     coronaNinjaApi = 'https://corona.lmao.ninja';
 
@@ -16,7 +16,7 @@ export default class DataSourceService {
                     countries.push({
                         name: _.replace(element.name, '*', ''),
                         iso2: element.iso2,
-                        iso3: element.iso3,
+                        iso3: element.iso3
                     });
                 });
                 return countries;
