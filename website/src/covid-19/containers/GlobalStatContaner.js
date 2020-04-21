@@ -5,10 +5,11 @@ import { map } from 'rxjs/operators';
 import { forkJoin } from 'rxjs';
 import { connect } from 'react-redux'
 import { ClearGlobalStat, SetGlobalStat } from './../store/actions/GlobalStatAction';
+import StatTable from './../components/StatTable';
 class GlobalStatContaner extends Component {
     componentDidMount() {
         this.loadData((data) => {
-            console.log(this.props); 
+
         });
     }
     loadData = (callback) => {
@@ -34,16 +35,17 @@ class GlobalStatContaner extends Component {
         });
     }
     render() {
+
         return (
             <>
-                < Box>GlobalPage</ Box>
+               <StatTable countryStats={this.props.globalStat.countryStats}/>
             </>
         );
     }
 }
 const mapStateToProps = (state) => {
     return {
-        GlobalStat: state.GlobalStatReducer
+        globalStat: state.GlobalStatReducer
     }
 }
 

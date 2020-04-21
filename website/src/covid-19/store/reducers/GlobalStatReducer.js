@@ -11,7 +11,7 @@ export const GlobalStatReducer = (
     }, action) => {
     switch (action.type) {
         case GlobalStatActionType.Set:
-            return _.cloneDeep( action.state);
+            return _.merge({},state,action.state);;
         case GlobalStatActionType.Clear:
             return {};
         default:

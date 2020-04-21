@@ -81,7 +81,7 @@ export class DataSourceService {
     }
 
     getHistoricalCountryStatsByCountry(country) {
-        const promise = axios.get(`${this.coronaNinjaApi}/v2/historical/${country.iso3}`);
+        const promise = axios.get(`${this.coronaNinjaApi}/v2/historical/${country}`);
   
         return from(promise ).pipe(
           map((res) => {
@@ -159,7 +159,7 @@ export class DataSourceService {
     
     
       getCountryStat(country){
-        const promise = axios.get(`${this.coronaNinjaApi}/v2/countries/${country.iso3}`);
+        const promise = axios.get(`${this.coronaNinjaApi}/v2/countries/${country}`);
         return from(promise).pipe(
           map((res) => ({
             country: {
@@ -170,7 +170,7 @@ export class DataSourceService {
             stats: [
               {
                 confirmed: res.data.todayCases,
-                deaths: res.data.todaydeaths
+                deaths: res.data.todayDeaths
               },
               {
                 confirmed: res.data.cases,
@@ -202,7 +202,7 @@ export class DataSourceService {
                 stats: [
                   {
                     confirmed: item.todayCases,
-                    deaths: item.todaydeaths
+                    deaths: item.todayDeaths
                   },
                   {
                     confirmed: item.cases,
