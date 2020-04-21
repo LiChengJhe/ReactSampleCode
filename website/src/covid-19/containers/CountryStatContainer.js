@@ -8,6 +8,7 @@ import {
   SetCountryStat,
 } from "./../store/actions/CountryStatAction";
 import { Form, Select } from "antd";
+import StatTable from './../components/StatTable';
 
 const { Option } = Select;
 class CountryStatContainer extends Component {
@@ -72,6 +73,7 @@ class CountryStatContainer extends Component {
             </Select>
           </Form.Item>
         </Form>
+        <StatTable countryStats={this.props.countryStat?.selectedCountryStat?[this.props.countryStat?.selectedCountryStat]:[]}/>
       </>
     );
   }
