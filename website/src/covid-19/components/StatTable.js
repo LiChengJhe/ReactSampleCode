@@ -1,8 +1,7 @@
 import React, { Component } from "react";
 import _ from "lodash";
-import { Table, Input, Button } from "antd";
-import Highlighter from "react-highlight-words";
-import { SearchOutlined } from "@ant-design/icons";
+import { Table } from "antd";
+import { FieldType,getColSearchProps , getColProp } from "./../../utilities/TableUtility";
 export default class StatTable extends Component {
   constructor(prop) {
     super(prop);
@@ -11,66 +10,54 @@ export default class StatTable extends Component {
       searchedColumn: "",
     };
   }
-
+  sortRateCallback=(a,b,field)=>{
+      console.log(a[field]);
+      return 0;
+  }
   getTableCols = () => {
     return [
       {
-        title: "國家",
-        dataIndex: "country",
-        key: "country",
-        sorter: (a, b) =>
-          a.country.localeCompare(b.country, "en", { numeric: true }),
-        ...this.getColumnSearchProps("country"),
+        ...getColProp("國家","country",{fieldType:FieldType.String}),
+        ...getColSearchProps("country",this),
       },
       {
-        title: "確診(總)",
-        dataIndex: "totalConfirmed",
-        key: "totalConfirmed",
-        sorter: (a, b) => a.totalConfirmed - b.totalConfirmed,
+        ...getColProp("確診(總)","totalConfirmed",{fieldType:FieldType.Number})
       },
       {
-        title: "死亡(總)",
-        dataIndex: "totalDeaths",
-        key: "totalDeaths",
-        sorter: (a, b) => a.totalDeaths - b.totalDeaths,
+        ...getColProp("死亡(總)","totalDeaths",{fieldType:FieldType.Number})
       },
       {
-        title: "治癒(總)",
-        dataIndex: "totalRecovered",
-        key: "totalRecovered",
-        sorter: (a, b) => a.totalRecovered - b.totalRecovered,
+        ...getColProp("治癒(總)","totalRecovered",{fieldType:FieldType.Number})
       },
       {
-        title: "治癒率",
-        dataIndex: "recoveredRate",
-        key: "recoveredRate",
+        ...getColProp("治癒率","recoveredRate",{
+            fieldType:FieldType.JSX,
+            callback:(a,b)=> a.recoveredRate.props.children[0]-b.recoveredRate.props.children[0]     
+        })
       },
       {
-        title: "輕症率",
-        dataIndex: "mildRate",
-        key: "mildRate",
+        ...getColProp("輕症率","mildRate",{
+            fieldType:FieldType.JSX,
+            callback:(a,b)=> a.mildRate.props.children[0]-b.mildRate.props.children[0]     
+        })
       },
       {
-        title: "重症率",
-        dataIndex: "criticalRate",
-        key: "criticalRate",
+        ...getColProp("重症率","criticalRate",{
+            fieldType:FieldType.JSX,
+            callback:(a,b)=> a.criticalRate.props.children[0]-b.criticalRate.props.children[0]     
+        })
       },
       {
-        title: "死亡率",
-        dataIndex: "deathRate",
-        key: "deathRate",
+        ...getColProp("死亡率","deathRate",{
+            fieldType:FieldType.JSX,
+            callback:(a,b)=> a.deathRate.props.children[0]-b.deathRate.props.children[0]     
+        })
       },
       {
-        title: "確診(今日)",
-        dataIndex: "todayConfirmed",
-        key: "todayConfirmed",
-        sorter: (a, b) => a.todayConfirmed - b.todayConfirmed,
+        ...getColProp("確診(今日)","todayConfirmed",{fieldType:FieldType.Number})
       },
       {
-        title: "死亡(今日)",
-        dataIndex: "todayDeaths",
-        key: "todayDeaths",
-        sorter: (a, b) => a.todayDeaths - b.todayDeaths,
+        ...getColProp("死亡(今日)","todayDeaths",{fieldType:FieldType.Number})
       },
     ];
   };
@@ -103,81 +90,9 @@ export default class StatTable extends Component {
     return table;
   };
 
-  getColumnSearchProps = (dataIndex) => ({
-    filterDropdown: ({
-      setSelectedKeys,
-      selectedKeys,
-      confirm,
-      clearFilters,
-    }) => (
-      <div style={{ padding: 8 }}>
-        <Input
-          ref={(node) => {
-            this.searchInput = node;
-          }}
-          placeholder={`Search ${dataIndex}`}
-          value={selectedKeys[0]}
-          onChange={(e) =>
-            setSelectedKeys(e.target.value ? [e.target.value] : [])
-          }
-          onPressEnter={() =>
-            this.handleSearch(selectedKeys, confirm, dataIndex)
-          }
-          style={{ width: 188, marginBottom: 8, display: "block" }}
-        />
-        <Button
-          type="primary"
-          onClick={() => this.handleSearch(selectedKeys, confirm, dataIndex)}
-          icon={<SearchOutlined />}
-          size="small"
-          style={{ width: 90, marginRight: 8 }}
-        >
-          Search
-        </Button>
-        <Button
-          onClick={() => this.handleReset(clearFilters)}
-          size="small"
-          style={{ width: 90 }}
-        >
-          Reset
-        </Button>
-      </div>
-    ),
-    filterIcon: (filtered) => (
-      <SearchOutlined style={{ color: filtered ? "#1890ff" : undefined }} />
-    ),
-    onFilter: (value, record) =>
-      record[dataIndex].toString().toLowerCase().includes(value.toLowerCase()),
-    onFilterDropdownVisibleChange: (visible) => {
-      if (visible) {
-        setTimeout(() => this.searchInput.select());
-      }
-    },
-    render: (text) =>
-      this.state.searchedColumn === dataIndex ? (
-        <Highlighter
-          highlightStyle={{ backgroundColor: "#ffc069", padding: 0 }}
-          searchWords={[this.state.searchText]}
-          autoEscape
-          textToHighlight={text.toString()}
-        />
-      ) : (
-        text
-      ),
-  });
 
-  handleSearch = (selectedKeys, confirm, dataIndex) => {
-    confirm();
-    this.setState({
-      searchText: selectedKeys[0],
-      searchedColumn: dataIndex,
-    });
-  };
 
-  handleReset = (clearFilters) => {
-    clearFilters();
-    this.setState({ searchText: "" });
-  };
+
   render() {
     return (
       <>
