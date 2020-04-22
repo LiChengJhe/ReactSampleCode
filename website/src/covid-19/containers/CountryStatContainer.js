@@ -74,15 +74,15 @@ class CountryStatContainer extends Component {
             </Select>
           </Form.Item>
         </Form>
-        <StatCard stat={this.props.countryStat?.selectedCountryStat?.stats[this.props.countryStat?.selectedCountryStat?.stats.length-1]} />
-        <StatTable countryStats={this.props.countryStat?.selectedCountryStat?[this.props.countryStat.selectedCountryStat]:[]}/>
+        <StatCard stat={this.props.country?.selectedCountryStat?.stats[this.props.country?.selectedCountryStat?.stats.length-1]} />
+        <StatTable countryStats={this.props.country?.selectedCountryStat?[this.props.country.selectedCountryStat]:[]}/>
       </>
     );
   }
 }
 const mapStateToProps = (state) => {
   return {
-    countryStat: state.CountryStatReducer,
+    country: state.CountryStatReducer,
   };
 };
 

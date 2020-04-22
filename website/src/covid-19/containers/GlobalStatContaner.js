@@ -44,15 +44,15 @@ class GlobalStatContaner extends Component {
   render() {
     return (
       <>
-        <StatCard stat={this.props.globalStat.globalStat} />
-        <StatTable countryStats={this.props.globalStat.countryStats} />
+        <StatCard stat={this.props.global.globalStat} />
+        <StatTable countryStats={this.props.global.countryStats} />
       </>
     );
   }
 }
 const mapStateToProps = (state) => {
   return {
-    globalStat: state.GlobalStatReducer,
+    global: state.GlobalStatReducer,
   };
 };
 
