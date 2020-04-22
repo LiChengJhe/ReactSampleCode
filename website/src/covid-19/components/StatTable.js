@@ -6,8 +6,8 @@ export default class StatTable extends Component {
   constructor(prop) {
     super(prop);
     this.state = {
-      searchText: "",
-      searchedColumn: "",
+      searchText: '',
+      searchedColumn: '',
     };
   }
   sortRateCallback=(a,b,field)=>{
@@ -76,14 +76,14 @@ export default class StatTable extends Component {
           totalConfirmed: lastStat.confirmed,
           totalRecovered: lastStat.recovered,
           totalDeaths: lastStat.deaths,
-          deathRate: <b style={{ color: "red" }}>{lastStat.deathRate}%</b>,
+          deathRate: <b style={{ color: "#ff3300" }}>{lastStat.deathRate}%</b>,
           recoveredRate: (
-            <b style={{ color: "green" }}>{lastStat.recoveredRate}%</b>
+            <b style={{ color: "#00cc66" }}>{lastStat.recoveredRate}%</b>
           ),
           criticalRate: (
-            <b style={{ color: "blue" }}>{lastStat.criticalRate}%</b>
+            <b style={{ color: "#006699" }}>{lastStat.criticalRate}%</b>
           ),
-          mildRate: <b style={{ color: "orange" }}>{lastStat.mildRate}%</b>,
+          mildRate: <b style={{ color: "#ff9933" }}>{lastStat.mildRate}%</b>,
         });
       });
     }

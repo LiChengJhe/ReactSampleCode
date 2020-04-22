@@ -9,12 +9,13 @@ import {
 } from "./../store/actions/CountryStatAction";
 import { Form, Select } from "antd";
 import StatTable from './../components/StatTable';
+import StatCard from './../components/StatCard';
 
 const { Option } = Select;
 class CountryStatContainer extends Component {
   componentDidMount() {
     this.loadData((data) => {
-      
+        this.onValuesChange({country:"TWN"});
     });
   }
   loadData = (callback) => {
@@ -73,7 +74,8 @@ class CountryStatContainer extends Component {
             </Select>
           </Form.Item>
         </Form>
-        <StatTable countryStats={this.props.countryStat?.selectedCountryStat?[this.props.countryStat?.selectedCountryStat]:[]}/>
+        <StatCard stat={this.props.countryStat?.selectedCountryStat?.stats[this.props.countryStat?.selectedCountryStat?.stats.length-1]} />
+        <StatTable countryStats={this.props.countryStat?.selectedCountryStat?[this.props.countryStat.selectedCountryStat]:[]}/>
       </>
     );
   }
