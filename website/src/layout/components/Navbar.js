@@ -17,7 +17,7 @@ export class Navbar extends Component {
     return (
       <>
         <AppBar position='static' >
-          <Tabs value={this.props?.location?.pathname?this.props.location.pathname:'/global'} onChange={this.tabChange} >
+          <Tabs value={this.props?.location?.pathname.length>1?this.props.location.pathname:'/global'} onChange={this.tabChange} >
             <Tab label='全球統計' value='/global' icon={<FontAwesomeIcon icon={faGlobe} />} />
             <Tab label='各國統計' value='/country' icon={<FontAwesomeIcon icon={faFlag} />} />
           </Tabs>

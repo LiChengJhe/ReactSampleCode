@@ -10,10 +10,7 @@ export default class StatTable extends Component {
       searchedColumn: '',
     };
   }
-  sortRateCallback=(a,b,field)=>{
-      console.log(a[field]);
-      return 0;
-  }
+
   getTableCols = () => {
     return [
       {

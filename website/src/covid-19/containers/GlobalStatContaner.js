@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { Box } from "@material-ui/core";
 import { dataSourceService } from "../services/DataSourceService";
 import { map } from "rxjs/operators";
 import { forkJoin } from "rxjs";
@@ -10,7 +9,9 @@ import {
 } from "./../store/actions/GlobalStatAction";
 import StatTable from "./../components/StatTable";
 import StatCard from "./../components/StatCard";
+import TotalStatLineChart from './../components/TotalStatLineChart';
 class GlobalStatContaner extends Component {
+
   componentDidMount() {
     this.loadData((data) => {});
   }
@@ -44,6 +45,7 @@ class GlobalStatContaner extends Component {
   render() {
     return (
       <>
+       <TotalStatLineChart  stat={this.props.global.globalHistoricalStats} />
         <StatCard stat={this.props.global.globalStat} />
         <StatTable countryStats={this.props.global.countryStats} />
       </>

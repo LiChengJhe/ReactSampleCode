@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Statistic, Card, Row, Col,Space } from "antd";
+import { Statistic, Card, Row, Col } from "antd";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFrown,faSmile,faDizzy } from '@fortawesome/free-solid-svg-icons'
 export default class StatCard extends Component {
