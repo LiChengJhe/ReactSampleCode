@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import * as d3 from "d3";
 import "./TotalStatLineChart.css";
 import _ from "lodash";
+
 export default class TotalStatLineChart extends Component {
   constructor(props) {
     super(props);
@@ -41,23 +42,21 @@ export default class TotalStatLineChart extends Component {
     const width = 1000 - margin.left - margin.right;
     const height = 400 - margin.top - margin.bottom;
     const svg = this.addSvg(width, margin, height);
-    const allGroup = ["確診", "治癒", "死亡"];
     const data = this.getSeries(this.props.stat);
-    const color = d3.scaleOrdinal().domain(allGroup).range(d3.schemeSet2);
-    const xScale = d3
-      .scaleTime()
-      .domain(d3.extent(_.first(data).data, (d) => d.lastUpdate))
-      .range([0, width]);
-    const yScale = d3
-      .scaleLinear()
-      .domain([0, d3.max(_.first(data).data, (o) => o.value)])
-      .range([height, 0]);
+    const color = d3
+      .scaleOrdinal()
+      .domain(_.map(data, (o) => o.name))
+      .range(d3.schemeSet2);
+    const xExtent = d3.extent(_.first(data).data, (d) => d.lastUpdate);
+    const xScale = d3.scaleTime().domain(xExtent).range([0, width]);
+    const maxY = d3.max(_.first(data).data, (o) => o.value);
+    const yScale = d3.scaleLinear().domain([0, maxY]).range([height, 0]);
     this.addTitles(svg, margin);
     this.addXY(svg, height, xScale, yScale, width);
     this.addLines(xScale, yScale, svg, data, color);
     this.addPoints(svg, data, color, xScale, yScale);
-    this.addLabels(svg, data, xScale, yScale, color);
     this.addLegend(svg, data, width, margin, color);
+    this.addFocus(svg, data, color, width, height, xScale, yScale);
   };
 
   addLegend = (svg, data, width, margin, color) => {
@@ -66,67 +65,34 @@ export default class TotalStatLineChart extends Component {
       .data(data)
       .enter()
       .append("g")
-      .on("click", function (d) {
-        const currentOpacity = d3.selectAll("." + d.name).style("opacity");
-        d3.selectAll("." + d.name)
-          .transition()
-          .style("opacity", currentOpacity == 1 ? 0 : 1);
+      .on("click", (d) => {
+        console.log(d);
+        const line = d3.selectAll(`.${d.name}`);
+        const curOpacity = line.style("opacity");
+        const checkbox = d3.selectAll(`.${d.name}_checkbox`);
+        line.transition().style("opacity", curOpacity === 1 ? 0 : 1);
+        if (curOpacity === 1) {
+          checkbox.style("fill", "white");
+        } else {
+          checkbox.style("fill", color(d.name));
+        }
       });
     legendGroup
       .append("rect")
-      .attr("x", function (d, i) {
-        return width - margin.right + i * 60 - 25;
-      })
-      .attr("y", -margin.bottom * 1.5)
-      .attr("width", 20)
-      .attr("height", 20)
-      .style("fill", function (d) {
-        return color(d.name);
-      });
+      .attr("class", (d) => `${d.name}_checkbox`)
+      .attr("x", (d, i) => width - margin.right + i * 70 - 21)
+      .attr("y", -margin.bottom * 1.4)
+      .attr("width", 15)
+      .attr("height", 15)
+      .style("fill", (d) => color(d.name))
+      .style("outline-color", (d) => color(d.name))
+      .style("outline-style", "solid");
     legendGroup
       .append("text")
-      .attr("x", function (d, i) {
-        return width - margin.right + i * 60;
-      })
+      .attr("x", (d, i) => width - margin.right + i * 70)
       .attr("y", -margin.bottom)
-      .text(function (d) {
-        return d.name;
-      })
-      .style("fill", function (d) {
-        return color(d.name);
-      })
-      .style("font-size", 15)
-      .style("font-weight", "bold");
-  };
-
-  addLabels = (svg, data, xScale, yScale, color) => {
-    svg
-      .selectAll("labels")
-      .data(data)
-      .enter()
-      .append("text")
-      .attr("class", function (d) {
-        return d.name;
-      })
-      .datum(function (d) {
-        return { name: d.name, data: d.data[d.data.length / 2 - 1] };
-      })
-      .attr("transform", function (d) {
-        return (
-          "translate(" +
-          xScale(d.data.lastUpdate) +
-          "," +
-          yScale(d.data.value) +
-          ")"
-        );
-      })
-      .attr("y", -10)
-      .text(function (d) {
-        return d.name;
-      })
-      .style("fill", function (d) {
-        return color(d.name);
-      })
+      .text((d) => d.name)
+      .style("fill", (d) => color(d.name))
       .style("font-size", 15)
       .style("font-weight", "bold");
   };
@@ -137,27 +103,15 @@ export default class TotalStatLineChart extends Component {
       .data(data)
       .enter()
       .append("g")
-      .attr("class", function (d) {
-        return d.name;
-      })
-      .style("fill", function (d) {
-        return color(d.name);
-      })
+      .attr("class", (d) => d.name)
+      .style("fill", (d) => color(d.name))
       .selectAll("points")
-      .data(function (d) {
-        return d.data;
-      })
+      .data((d) => d.data)
       .enter()
       .append("circle")
-      .attr("class", function (d) {
-        return d.name;
-      })
-      .attr("cx", function (d) {
-        return xScale(d.lastUpdate);
-      })
-      .attr("cy", function (d) {
-        return yScale(d.value);
-      })
+      .attr("class", (d) => d.name)
+      .attr("cx", (d) => xScale(d.lastUpdate))
+      .attr("cy", (d) => yScale(d.value))
       .attr("r", 5)
       .attr("stroke", "white");
   };
@@ -193,17 +147,16 @@ export default class TotalStatLineChart extends Component {
     svg
       .append("g")
       .attr("transform", "translate(0," + height + ")")
-      .call(
-        d3
-          .axisBottom(xScale)
-          .ticks(10)
-          .tickFormat(d3.timeFormat("%m/%d"))
-          .tickSize(-height)
-      );
-    svg.append("g").call(d3.axisLeft(yScale).ticks(5).tickSize(-width));
+      .call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat("%m/%d")));
+    svg.append("g").call(d3.axisLeft(yScale).ticks(8).tickSize(-width));
     svg
-      .selectAll(".tick line")
-      .filter((d, i) => d !== 0)
+      .selectAll(".tick>line")
+      .filter((d, i, e) => {
+        return d !== 0;
+      })
+      .filter((d, i, e) => {
+        return i < e.length;
+      })
       .attr("stroke", "#EBEBEB");
   };
 
@@ -233,7 +186,104 @@ export default class TotalStatLineChart extends Component {
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
   };
 
+  addFocus(svg, data, color, width, height, xScale, yScale) {
+    const focusLine = svg
+      .append("line")
+      .attr("stroke", "#EBEBEB")
+      .attr("stroke-dasharray", 2)
+      .style("opacity", 0);
+    const focusCircle = svg
+      .selectAll("focusCircle")
+      .data(data)
+      .enter()
+      .append("circle")
+      .style("fill", "none")
+      .attr("stroke", (d) => color(d.name))
+      .attr("r", 8.5)
+      .style("opacity", 0);
+    const focusText = svg
+      .selectAll("focusText")
+      .data(data)
+      .enter()
+      .append("text")
+      .style("fill", (d) => color(d.name))
+      .style("opacity", 0)
+      .attr("text-anchor", "left")
+      .attr("alignment-baseline", "middle");
+    svg
+      .append("rect")
+      .style("fill", "none")
+      .style("pointer-events", "all")
+      .attr("width", width)
+      .attr("height", height)
+      .on("mouseover", () => {
+        focusCircle.style("opacity", 1);
+        focusText.style("opacity", 1);
+        focusLine.style("opacity", 1);
+      })
+      .on("mousemove", function () {
+        const x = xScale.invert(_.first(d3.mouse(this)));
+        const selectedX = _.find(
+          _.first(data).data,
+          (o) => o.lastUpdate.toDateString() === x.toDateString()
+        );
+        focusLine
+          .attr("x1", xScale(selectedX.lastUpdate))
+          .attr("x2", xScale(selectedX.lastUpdate))
+          .attr("y1", 0)
+          .attr("y2", height);
+        focusCircle.each(function (element, item) {
+          const selectedData = _.find(
+            element.data,
+            (o) => o.lastUpdate.toDateString() === x.toDateString()
+          );
+          d3.select(this)
+            .attr("cx", xScale(selectedData.lastUpdate))
+            .attr("cy", yScale(selectedData.value));
+        });
+        focusText.each(function (element, item) {
+          const selectedData = _.find(
+            element.data,
+            (o) => o.lastUpdate.toDateString() === x.toDateString()
+          );
+          d3.select(this)
+            .html(
+              "x:" +
+                selectedData.lastUpdate +
+                "  -  " +
+                "y:" +
+                selectedData.value
+            )
+            .attr("x", xScale(selectedData.lastUpdate) + 15)
+            .attr("y", yScale(selectedData.value));
+        });
+      })
+      .on("mouseout", () => {
+        focusCircle.style("opacity", 0);
+        focusText.style("opacity", 0);
+        focusLine.style("opacity", 0);
+      });
+  }
+
   render() {
-    return <div ref={this.gRef}></div>;
+    return (
+      <>
+        <div ref={this.gRef}></div>
+        <div id="focusCard" class="card border-secondary" style={{ maxWidth: "18rem",opacity:1 }}>
+          <div class="card-header">確診/死亡/治癒(總)</div>
+          <div class="card-body text-secondary">
+            <p class="card-text">
+              <span
+                class="badge text-white"
+                style={{ backgroundColor: "red", marginRight: "1px" }} >
+                &nbsp;&nbsp;&nbsp;
+              </span>
+              <span style={{ color: "red", marginRight: "1px" }}>Primary</span>
+              <span style={{ color: "red", marginRight: "1px" }}>Primary</span>
+            </p>
+          </div>
+        </div>
+      </>
+    );
   }
 }
