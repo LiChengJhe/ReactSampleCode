@@ -6,6 +6,7 @@ import _ from "lodash";
 export default class TotalStatLineChart extends Component {
   constructor(props) {
     super(props);
+    this.state = { focusData: [], selectedData: [] };
     this.gRef = React.createRef();
   }
   getSeries = (data) => {
@@ -33,16 +34,18 @@ export default class TotalStatLineChart extends Component {
     });
     return confirmedDate;
   }
-  componentDidUpdate() {
-    this.draw();
+
+  componentDidUpdate(prevProps, prevState) {
+    if (this.props.stat && prevProps.stat !== this.props.stat) {
+      this.draw(this.getSeries(this.props.stat));
+    }
   }
 
-  draw = () => {
+  draw = (data) => {
     const margin = { top: 50, right: 150, bottom: 30, left: 100 };
     const width = 1000 - margin.left - margin.right;
     const height = 400 - margin.top - margin.bottom;
     const svg = this.addSvg(width, margin, height);
-    const data = this.getSeries(this.props.stat);
     const color = d3
       .scaleOrdinal()
       .domain(_.map(data, (o) => o.name))
@@ -60,21 +63,33 @@ export default class TotalStatLineChart extends Component {
   };
 
   addLegend = (svg, data, width, margin, color) => {
+    this.setState({ selectedData: data });
     const legendGroup = svg
       .selectAll("legend")
       .data(data)
       .enter()
       .append("g")
       .on("click", (d) => {
-        console.log(d);
-        const line = d3.selectAll(`.${d.name}`);
-        const curOpacity = line.style("opacity");
+        const line = d3.selectAll(`.${d.name}_g`);
+        const curOpacity = Number(line.style("opacity"));
         const checkbox = d3.selectAll(`.${d.name}_checkbox`);
         line.transition().style("opacity", curOpacity === 1 ? 0 : 1);
+
         if (curOpacity === 1) {
           checkbox.style("fill", "white");
+          this.setState({
+            selectedData: _.filter(
+              this.state.selectedData,
+              (o) => o.name != d.name
+            ),
+          });
         } else {
           checkbox.style("fill", color(d.name));
+    
+            this.setState({
+              selectedData: [d].concat(this.state.selectedData)
+            });
+          
         }
       });
     legendGroup
@@ -103,7 +118,7 @@ export default class TotalStatLineChart extends Component {
       .data(data)
       .enter()
       .append("g")
-      .attr("class", (d) => d.name)
+      .attr("class", (d) => `${d.name}_g`)
       .style("fill", (d) => color(d.name))
       .selectAll("points")
       .data((d) => d.data)
@@ -130,15 +145,9 @@ export default class TotalStatLineChart extends Component {
       .data(data)
       .enter()
       .append("path")
-      .attr("class", function (d) {
-        return d.name;
-      })
-      .attr("d", function (d) {
-        return line(d.data);
-      })
-      .attr("stroke", function (d) {
-        return color(d.name);
-      })
+      .attr("class", (d) => `${d.name}_g`)
+      .attr("d", (d) => line(d.data))
+      .attr("stroke", (d) => color(d.name))
       .style("stroke-width", 4)
       .style("fill", "none");
   };
@@ -151,12 +160,8 @@ export default class TotalStatLineChart extends Component {
     svg.append("g").call(d3.axisLeft(yScale).ticks(8).tickSize(-width));
     svg
       .selectAll(".tick>line")
-      .filter((d, i, e) => {
-        return d !== 0;
-      })
-      .filter((d, i, e) => {
-        return i < e.length;
-      })
+      .filter((d, i, e) => d !== 0)
+      .filter((d, i, e) => i < e.length)
       .attr("stroke", "#EBEBEB");
   };
 
@@ -186,7 +191,8 @@ export default class TotalStatLineChart extends Component {
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
   };
 
-  addFocus(svg, data, color, width, height, xScale, yScale) {
+  addFocus = (svg, data, color, width, height, xScale, yScale) => {
+    const that = this;
     const focusLine = svg
       .append("line")
       .attr("stroke", "#EBEBEB")
@@ -197,19 +203,14 @@ export default class TotalStatLineChart extends Component {
       .data(data)
       .enter()
       .append("circle")
+      .attr("class", (d) => `${d.name}_focusCircle`)
       .style("fill", "none")
       .attr("stroke", (d) => color(d.name))
       .attr("r", 8.5)
       .style("opacity", 0);
-    const focusText = svg
-      .selectAll("focusText")
-      .data(data)
-      .enter()
-      .append("text")
-      .style("fill", (d) => color(d.name))
-      .style("opacity", 0)
-      .attr("text-anchor", "left")
-      .attr("alignment-baseline", "middle");
+
+    const focusCard = d3.select("#focusCard");
+
     svg
       .append("rect")
       .style("fill", "none")
@@ -217,70 +218,92 @@ export default class TotalStatLineChart extends Component {
       .attr("width", width)
       .attr("height", height)
       .on("mouseover", () => {
-        focusCircle.style("opacity", 1);
-        focusText.style("opacity", 1);
+        focusCircle.each(function (element, item) {
+          if (_.find(that.state.selectedData, (o) => o.name == element.name)) {
+            d3.select(this).style("opacity", 1);
+          }
+        });
         focusLine.style("opacity", 1);
+       if( that.state.selectedData.length>1){
+        focusCard.style("opacity", 1);
+       }
       })
       .on("mousemove", function () {
-        const x = xScale.invert(_.first(d3.mouse(this)));
+        const mouse = d3.mouse(this);
+        const x = xScale.invert(mouse[0]);
+        const y = yScale.invert(mouse[1]);
+
+        focusCard.style("left", `${xScale(x) + 150}px`);
+        focusCard.style("top", `${yScale(y)}px`);
+
         const selectedX = _.find(
           _.first(data).data,
           (o) => o.lastUpdate.toDateString() === x.toDateString()
         );
+
         focusLine
           .attr("x1", xScale(selectedX.lastUpdate))
           .attr("x2", xScale(selectedX.lastUpdate))
           .attr("y1", 0)
           .attr("y2", height);
+
+        const focusData = [];
         focusCircle.each(function (element, item) {
-          const selectedData = _.find(
-            element.data,
-            (o) => o.lastUpdate.toDateString() === x.toDateString()
-          );
-          d3.select(this)
-            .attr("cx", xScale(selectedData.lastUpdate))
-            .attr("cy", yScale(selectedData.value));
+          if (_.find(that.state.selectedData, (o) => o.name == element.name)) {
+            const selectedData = _.find(
+              element.data,
+              (o) => o.lastUpdate.toDateString() === x.toDateString()
+            );
+            focusData.push(
+              _.merge(
+                { name: element.name, color: color(element.name) },
+                selectedData
+              )
+            );
+            d3.select(this)
+              .attr("cx", xScale(selectedData.lastUpdate))
+              .attr("cy", yScale(selectedData.value));
+          }
         });
-        focusText.each(function (element, item) {
-          const selectedData = _.find(
-            element.data,
-            (o) => o.lastUpdate.toDateString() === x.toDateString()
-          );
-          d3.select(this)
-            .html(
-              "x:" +
-                selectedData.lastUpdate +
-                "  -  " +
-                "y:" +
-                selectedData.value
-            )
-            .attr("x", xScale(selectedData.lastUpdate) + 15)
-            .attr("y", yScale(selectedData.value));
-        });
+
+        that.setState({ focusData: focusData });
       })
       .on("mouseout", () => {
         focusCircle.style("opacity", 0);
-        focusText.style("opacity", 0);
         focusLine.style("opacity", 0);
+        focusCard.style("opacity", 0);
       });
-  }
+  };
 
   render() {
     return (
       <>
         <div ref={this.gRef}></div>
-        <div id="focusCard" class="card border-secondary" style={{ maxWidth: "18rem",opacity:1 }}>
-          <div class="card-header">確診/死亡/治癒(總)</div>
-          <div class="card-body text-secondary">
-            <p class="card-text">
-              <span
-                class="badge text-white"
-                style={{ backgroundColor: "red", marginRight: "1px" }} >
-                &nbsp;&nbsp;&nbsp;
-              </span>
-              <span style={{ color: "red", marginRight: "1px" }}>Primary</span>
-              <span style={{ color: "red", marginRight: "1px" }}>Primary</span>
-            </p>
+        <div
+          id="focusCard"
+          className="card border-secondary"
+          style={{ maxWidth: "18rem", opacity: 0, position: "absolute" }}
+        >
+          <div className="card-header font-weight-bold">
+            {this.state?.focusData[0]?.lastUpdate.toISOString().slice(0, 10)}
+          </div>
+          <div className="card-body text-secondary font-weight-bold">
+            {this.state.focusData.map((o) => (
+              <p key={o.name} className="card-text ">
+                <span
+                  className="badge text-white"
+                  style={{ backgroundColor: o.color, marginRight: "5px" }}
+                >
+                  &nbsp;&nbsp;&nbsp;
+                </span>
+                <span style={{ color: o.color, marginRight: "15px" }}>
+                  {o.name}
+                </span>
+                <span style={{ color: o.color, marginRight: "15px" }}>
+                  {o.value}
+                </span>
+              </p>
+            ))}
           </div>
         </div>
       </>
