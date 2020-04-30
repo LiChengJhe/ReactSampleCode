@@ -56,10 +56,10 @@ export default class TotalStatLineChart extends Component {
     const yScale = d3.scaleLinear().domain([0, maxY]).range([height, 0]);
     this.addTitles(svg, margin);
     this.addXY(svg, height, xScale, yScale, width);
-    this.addLines(xScale, yScale, svg, data, color);
+    this.addLines(xScale, yScale, svg, data, color, width, height,margin);
     this.addPoints(svg, data, color, xScale, yScale);
     this.addLegend(svg, data, width, margin, color);
-    this.addFocus(svg, data, color, width, height, xScale, yScale);
+   // this.addFocus(svg, data, color, width, height, xScale, yScale);
   };
 
   addLegend = (svg, data, width, margin, color) => {
@@ -80,16 +80,15 @@ export default class TotalStatLineChart extends Component {
           this.setState({
             selectedData: _.filter(
               this.state.selectedData,
-              (o) => o.name != d.name
+              (o) => o.name !== d.name
             ),
           });
         } else {
           checkbox.style("fill", color(d.name));
-    
-            this.setState({
-              selectedData: [d].concat(this.state.selectedData)
-            });
-          
+
+          this.setState({
+            selectedData: [d].concat(this.state.selectedData),
+          });
         }
       });
     legendGroup
@@ -131,7 +130,7 @@ export default class TotalStatLineChart extends Component {
       .attr("stroke", "white");
   };
 
-  addLines = (xScale, yScale, svg, data, color) => {
+  addLines = (xScale, yScale, svg, data, color, width, height,margin) => {
     const line = d3
       .line()
       .x(function (d) {
@@ -140,6 +139,31 @@ export default class TotalStatLineChart extends Component {
       .y(function (d) {
         return yScale(d.value);
       });
+
+      
+//  const clip = svg.append("defs").append("SVG:clipPath")
+//       .attr("id", "clip")
+//       .append("SVG:rect")
+//       .attr("width", width )
+//       .attr("height", height )
+//       .attr("x", 0)
+//       .attr("y", 0);
+
+//   const zoom = d3.zoom()
+//       .scaleExtent([.5, 20]) 
+//       .extent([[0, 0], [width, height]])
+//       .on("zoom",()=>{console.log(1);});
+
+  //  svg.append('g').attr("clip-path", "url(#clip)") ;
+
+    // svg.append("rect")
+    // .attr("width", width)
+    // .attr("height", height)
+    // .style("fill", "none")
+    // .style("pointer-events", "all")
+    // .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+    // .call(zoom);
+
     svg
       .selectAll("lines")
       .data(data)
@@ -150,6 +174,8 @@ export default class TotalStatLineChart extends Component {
       .attr("stroke", (d) => color(d.name))
       .style("stroke-width", 4)
       .style("fill", "none");
+
+    
   };
 
   addXY = (svg, height, xScale, yScale, width) => {
@@ -219,14 +245,14 @@ export default class TotalStatLineChart extends Component {
       .attr("height", height)
       .on("mouseover", () => {
         focusCircle.each(function (element, item) {
-          if (_.find(that.state.selectedData, (o) => o.name == element.name)) {
+          if (_.find(that.state.selectedData, (o) => o.name === element.name)) {
             d3.select(this).style("opacity", 1);
           }
         });
         focusLine.style("opacity", 1);
-       if( that.state.selectedData.length>1){
-        focusCard.style("opacity", 1);
-       }
+        if (that.state.selectedData.length > 1) {
+          focusCard.style("opacity", 1);
+        }
       })
       .on("mousemove", function () {
         const mouse = d3.mouse(this);
@@ -249,7 +275,7 @@ export default class TotalStatLineChart extends Component {
 
         const focusData = [];
         focusCircle.each(function (element, item) {
-          if (_.find(that.state.selectedData, (o) => o.name == element.name)) {
+          if (_.find(that.state.selectedData, (o) => o.name === element.name)) {
             const selectedData = _.find(
               element.data,
               (o) => o.lastUpdate.toDateString() === x.toDateString()
