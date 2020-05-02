@@ -56,10 +56,8 @@ export default class TotalStatLineChart extends Component {
     const yScale = d3.scaleLinear().domain([0, maxY]).range([height, 0]);
     this.addTitles(svg, margin);
     this.addXY(svg, height, xScale, yScale, width);
-    this.addLines(xScale, yScale, svg, data, color, width, height,margin);
-    this.addPoints(svg, data, color, xScale, yScale);
+    this.addLines(xScale, yScale, svg, data, color, width, height, margin);
     this.addLegend(svg, data, width, margin, color);
-   // this.addFocus(svg, data, color, width, height, xScale, yScale);
   };
 
   addLegend = (svg, data, width, margin, color) => {
@@ -111,8 +109,30 @@ export default class TotalStatLineChart extends Component {
       .style("font-weight", "bold");
   };
 
-  addPoints = (svg, data, color, xScale, yScale) => {
-    svg
+  addLines = (xScale, yScale, svg, data, color, width, height, margin) => {
+    const line = d3
+      .line()
+      .x(function (d) {
+        return xScale(d.lastUpdate);
+      })
+      .y(function (d) {
+        return yScale(d.value);
+      });
+
+    const lines = svg.append('g').attr("clip-path", "url(#clip)");
+
+    lines
+      .selectAll("lines")
+      .data(data)
+      .enter()
+      .append("path")
+      .attr("class", (d) => `${d.name}_g`)
+      .attr("d", (d) => line(d.data))
+      .attr("stroke", (d) => color(d.name))
+      .style("stroke-width", 4)
+      .style("fill", "none");
+
+      lines
       .selectAll("dots")
       .data(data)
       .enter()
@@ -128,54 +148,10 @@ export default class TotalStatLineChart extends Component {
       .attr("cy", (d) => yScale(d.value))
       .attr("r", 5)
       .attr("stroke", "white");
-  };
 
-  addLines = (xScale, yScale, svg, data, color, width, height,margin) => {
-    const line = d3
-      .line()
-      .x(function (d) {
-        return xScale(d.lastUpdate);
-      })
-      .y(function (d) {
-        return yScale(d.value);
-      });
+      this.addBrushing(svg, width, height, lines);
+      this.addFocus(lines, data, color, xScale, yScale, height);
 
-      
-//  const clip = svg.append("defs").append("SVG:clipPath")
-//       .attr("id", "clip")
-//       .append("SVG:rect")
-//       .attr("width", width )
-//       .attr("height", height )
-//       .attr("x", 0)
-//       .attr("y", 0);
-
-//   const zoom = d3.zoom()
-//       .scaleExtent([.5, 20]) 
-//       .extent([[0, 0], [width, height]])
-//       .on("zoom",()=>{console.log(1);});
-
-  //  svg.append('g').attr("clip-path", "url(#clip)") ;
-
-    // svg.append("rect")
-    // .attr("width", width)
-    // .attr("height", height)
-    // .style("fill", "none")
-    // .style("pointer-events", "all")
-    // .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-    // .call(zoom);
-
-    svg
-      .selectAll("lines")
-      .data(data)
-      .enter()
-      .append("path")
-      .attr("class", (d) => `${d.name}_g`)
-      .attr("d", (d) => line(d.data))
-      .attr("stroke", (d) => color(d.name))
-      .style("stroke-width", 4)
-      .style("fill", "none");
-
-    
   };
 
   addXY = (svg, height, xScale, yScale, width) => {
@@ -217,14 +193,16 @@ export default class TotalStatLineChart extends Component {
       .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
   };
 
-  addFocus = (svg, data, color, width, height, xScale, yScale) => {
+
+
+  addFocus(lines, data, color, xScale, yScale, height) {
     const that = this;
-    const focusLine = svg
+    const focusLine = lines
       .append("line")
       .attr("stroke", "#EBEBEB")
       .attr("stroke-dasharray", 2)
       .style("opacity", 0);
-    const focusCircle = svg
+    const focusCircle = lines
       .selectAll("focusCircle")
       .data(data)
       .enter()
@@ -234,15 +212,8 @@ export default class TotalStatLineChart extends Component {
       .attr("stroke", (d) => color(d.name))
       .attr("r", 8.5)
       .style("opacity", 0);
-
     const focusCard = d3.select("#focusCard");
-
-    svg
-      .append("rect")
-      .style("fill", "none")
-      .style("pointer-events", "all")
-      .attr("width", width)
-      .attr("height", height)
+    lines
       .on("mouseover", () => {
         focusCircle.each(function (element, item) {
           if (_.find(that.state.selectedData, (o) => o.name === element.name)) {
@@ -258,40 +229,24 @@ export default class TotalStatLineChart extends Component {
         const mouse = d3.mouse(this);
         const x = xScale.invert(mouse[0]);
         const y = yScale.invert(mouse[1]);
-
         focusCard.style("left", `${xScale(x) + 150}px`);
         focusCard.style("top", `${yScale(y)}px`);
-
-        const selectedX = _.find(
-          _.first(data).data,
-          (o) => o.lastUpdate.toDateString() === x.toDateString()
-        );
-
+        const selectedX = _.find(_.first(data).data, (o) => o.lastUpdate.toDateString() === x.toDateString());
         focusLine
           .attr("x1", xScale(selectedX.lastUpdate))
           .attr("x2", xScale(selectedX.lastUpdate))
           .attr("y1", 0)
           .attr("y2", height);
-
         const focusData = [];
         focusCircle.each(function (element, item) {
           if (_.find(that.state.selectedData, (o) => o.name === element.name)) {
-            const selectedData = _.find(
-              element.data,
-              (o) => o.lastUpdate.toDateString() === x.toDateString()
-            );
-            focusData.push(
-              _.merge(
-                { name: element.name, color: color(element.name) },
-                selectedData
-              )
-            );
+            const selectedData = _.find(element.data, (o) => o.lastUpdate.toDateString() === x.toDateString());
+            focusData.push(_.merge({ name: element.name, color: color(element.name) }, selectedData));
             d3.select(this)
               .attr("cx", xScale(selectedData.lastUpdate))
               .attr("cy", yScale(selectedData.value));
           }
         });
-
         that.setState({ focusData: focusData });
       })
       .on("mouseout", () => {
@@ -299,7 +254,24 @@ export default class TotalStatLineChart extends Component {
         focusLine.style("opacity", 0);
         focusCard.style("opacity", 0);
       });
-  };
+  }
+
+  addBrushing(svg, width, height, lines) {
+    const clip = svg.append("defs").append("svg:clipPath")
+      .attr("id", "clip")
+      .append("svg:rect")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("x", 0)
+      .attr("y", 0);
+    const brush = d3.brushX()
+      .extent([[0, 0], [width, height]])
+      .on("end", () => { });
+    lines
+      .append("g")
+      .attr("class", "brush")
+      .call(brush);
+  }
 
   render() {
     return (
