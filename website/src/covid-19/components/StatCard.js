@@ -8,7 +8,7 @@ export default class StatCard extends Component {
       <>
 
         <Row justify='center' gutter={[48,48]}  style={{ width: '100vw' ,marginTop:'10px'}}>
-          <Col span={4}>
+          <Col span={6}>
             <Card>
               <Statistic
                 title="確診"
@@ -19,7 +19,7 @@ export default class StatCard extends Component {
               />
             </Card>
           </Col>
-          <Col span={4}>
+          <Col span={6}>
             <Card>
               <Statistic
                 title="治癒"
@@ -30,7 +30,7 @@ export default class StatCard extends Component {
               />
             </Card>
           </Col>
-          <Col span={4}>
+          <Col span={6}>
             <Card>
               <Statistic
                 title="死亡"
