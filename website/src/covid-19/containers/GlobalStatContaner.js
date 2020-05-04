@@ -10,10 +10,11 @@ import {
 import StatTable from "./../components/StatTable";
 import StatCard from "./../components/StatCard";
 import TotalStatLineChart from './../components/TotalStatLineChart';
+import { Row, Col } from "antd";
 class GlobalStatContaner extends Component {
 
   componentDidMount() {
-    this.loadData((data) => {});
+    this.loadData((data) => { });
   }
   loadData = (callback) => {
     forkJoin([
@@ -45,9 +46,21 @@ class GlobalStatContaner extends Component {
   render() {
     return (
       <>
-       <TotalStatLineChart  stat={this.props.global.globalHistoricalStats} />
-        <StatCard stat={this.props.global.globalStat} />
-        <StatTable countryStats={this.props.global.countryStats} />
+        <Row>
+          <Col span={24}>
+            <StatCard stat={this.props.global.globalStat} />
+          </Col>
+        </Row>
+        <Row>
+          <Col span={12}>
+            <TotalStatLineChart stat={this.props.global.globalHistoricalStats} />
+          </Col>
+        </Row>
+        <Row >
+          <Col span={24}>
+            <StatTable countryStats={this.props.global.countryStats} />
+          </Col>
+        </Row>
       </>
     );
   }

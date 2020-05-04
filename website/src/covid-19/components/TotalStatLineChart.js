@@ -4,11 +4,13 @@ import "./TotalStatLineChart.css";
 import _ from "lodash";
 
 export default class TotalStatLineChart extends Component {
+  chart;
   constructor(props) {
     super(props);
     this.state = { focusData: [], selectedData: [] };
     this.gRef = React.createRef();
   }
+
   getSeries = (data) => {
     const confirmed = { name: "確診", data: [] };
     const deaths = { name: "死亡", data: [] };
@@ -42,31 +44,59 @@ export default class TotalStatLineChart extends Component {
   }
 
   draw = (data) => {
-    const margin = { top: 50, right: 150, bottom: 30, left: 100 };
-    const width = 1000 - margin.left - margin.right;
-    const height = 400 - margin.top - margin.bottom;
-    const svg = this.addSvg(width, margin, height);
-    const color = d3
-      .scaleOrdinal()
-      .domain(_.map(data, (o) => o.name))
-      .range(d3.schemeSet2);
-    const xExtent = d3.extent(_.first(data).data, (d) => d.lastUpdate);
-    const xScale = d3.scaleTime().domain(xExtent).range([0, width]);
-    const maxY = d3.max(_.first(data).data, (o) => o.value);
-    const yScale = d3.scaleLinear().domain([0, maxY]).range([height, 0]);
-    this.addTitles(svg, margin);
-    this.addXY(svg, height, xScale, yScale, width);
-    this.addLines(xScale, yScale, svg, data, color, width, height,margin);
-    this.addPoints(svg, data, color, xScale, yScale);
-    this.addLegend(svg, data, width, margin, color);
-   // this.addFocus(svg, data, color, width, height, xScale, yScale);
+    this.chart={};
+    this.chart.data = data;
+    this.addSvg();
+    this.addTitles();
+    this.addXY();
+    this.addLines();
+    this.addBrushing();
+    this.addFocus();
+    this.addLegend();
+  };
+  
+  idled = () => {
+    this.chart.idleTimeout = null;
   };
 
-  addLegend = (svg, data, width, margin, color) => {
-    this.setState({ selectedData: data });
-    const legendGroup = svg
+  updateChart = () => {
+    const extent = d3.event.selection;
+
+    if (!extent) {
+      if (!this.chart.idleTimeout)
+        return (this.chart.idleTimeout = setTimeout(this.idled, 350));
+      this.chart.xScale.domain(this.chart.xExtent);
+    } else {
+      this.chart.xScale.domain([
+        this.chart.xScale.invert(extent[0]),
+        this.chart.xScale.invert(extent[1]),
+      ]);
+      this.chart.lines.select(".brush").call(this.chart.brush.move, null);
+    }
+
+    this.chart.xAxis
+      .transition()
+      .duration(1000)
+      .call(d3.axisBottom(this.chart.xScale));
+
+    this.chart.lines
+      .selectAll(".line_g")
+      .transition()
+      .duration(1000)
+      .attr("d", (d) => this.chart.lineGen(d.data));
+
+    this.chart.lines
+      .selectAll(".dot_g")
+      .transition()
+      .duration(1000)
+      .attr("cx", (d) => this.chart.xScale(d.lastUpdate))
+      .attr("cy", (d) => this.chart.yScale(d.value));
+  };
+  addLegend = () => {
+    this.setState({ selectedData: this.chart.data });
+    const legendGroup = this.chart.svg
       .selectAll("legend")
-      .data(data)
+      .data(this.chart.data)
       .enter()
       .append("g")
       .on("click", (d) => {
@@ -84,7 +114,7 @@ export default class TotalStatLineChart extends Component {
             ),
           });
         } else {
-          checkbox.style("fill", color(d.name));
+          checkbox.style("fill", this.chart.color(d.name));
 
           this.setState({
             selectedData: [d].concat(this.state.selectedData),
@@ -94,213 +124,261 @@ export default class TotalStatLineChart extends Component {
     legendGroup
       .append("rect")
       .attr("class", (d) => `${d.name}_checkbox`)
-      .attr("x", (d, i) => width - margin.right + i * 70 - 21)
-      .attr("y", -margin.bottom * 1.4)
+      .attr(
+        "x",
+        (d, i) => this.chart.width - this.chart.margin.right + i * 70 - 21
+      )
+      .attr("y", -this.chart.margin.bottom * 1.4)
       .attr("width", 15)
       .attr("height", 15)
-      .style("fill", (d) => color(d.name))
-      .style("outline-color", (d) => color(d.name))
+      .style("fill", (d) => this.chart.color(d.name))
+      .style("outline-color", (d) => this.chart.color(d.name))
       .style("outline-style", "solid");
     legendGroup
       .append("text")
-      .attr("x", (d, i) => width - margin.right + i * 70)
-      .attr("y", -margin.bottom)
+      .attr("x", (d, i) => this.chart.width - this.chart.margin.right + i * 70)
+      .attr("y", -this.chart.margin.bottom)
       .text((d) => d.name)
-      .style("fill", (d) => color(d.name))
+      .style("fill", (d) => this.chart.color(d.name))
       .style("font-size", 15)
       .style("font-weight", "bold");
   };
 
-  addPoints = (svg, data, color, xScale, yScale) => {
-    svg
+  addLines = () => {
+
+    this.chart.color = d3
+    .scaleOrdinal()
+    .domain(_.map(this.chart.data, (o) => o.name))
+    .range(d3.schemeSet2);
+
+    this.chart.lineGen = d3
+      .line()
+      .x((d) => {
+        return this.chart.xScale(d.lastUpdate);
+      })
+      .y((d) => {
+        return this.chart.yScale(d.value);
+      });
+
+    this.chart.lines = this.chart.svg
+      .append("g")
+      .attr("clip-path", "url(#clip)");
+
+    this.chart.lines
+      .selectAll("lines")
+      .data(this.chart.data)
+      .enter()
+      .append("path")
+      .attr("class", (d) => `${d.name}_g line_g`)
+      .attr("d", (d) => this.chart.lineGen(d.data))
+      .attr("stroke", (d) => this.chart.color(d.name))
+      .style("stroke-width", 4)
+      .style("fill", "none");
+
+    this.chart.lines
       .selectAll("dots")
-      .data(data)
+      .data(this.chart.data)
       .enter()
       .append("g")
       .attr("class", (d) => `${d.name}_g`)
-      .style("fill", (d) => color(d.name))
+      .style("fill", (d) => this.chart.color(d.name))
       .selectAll("points")
       .data((d) => d.data)
       .enter()
       .append("circle")
-      .attr("class", (d) => d.name)
-      .attr("cx", (d) => xScale(d.lastUpdate))
-      .attr("cy", (d) => yScale(d.value))
+      .attr("class", (d) => `dot_g`)
+      .attr("cx", (d) => this.chart.xScale(d.lastUpdate))
+      .attr("cy", (d) => this.chart.yScale(d.value))
       .attr("r", 5)
       .attr("stroke", "white");
   };
 
-  addLines = (xScale, yScale, svg, data, color, width, height,margin) => {
-    const line = d3
-      .line()
-      .x(function (d) {
-        return xScale(d.lastUpdate);
-      })
-      .y(function (d) {
-        return yScale(d.value);
-      });
-
-      
- const clip = svg.append("defs").append("SVG:clipPath")
-      .attr("id", "clip")
-      .append("SVG:rect")
-      .attr("width", width )
-      .attr("height", height )
-      .attr("x", 0)
-      .attr("y", 0);
-
-  const zoom = d3.zoom()
-      .scaleExtent([.5, 20]) 
-      .extent([[0, 0], [width, height]])
-      .on("zoom",()=>{console.log(1);});
-
-   svg.append('g').attr("clip-path", "url(#clip)") ;
-
-    svg.append("rect")
-    .attr("width", width)
-    .attr("height", height)
-    .style("fill", "none")
-    .style("pointer-events", "all")
-    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-    .on("mousemove", function () {console.log(2);})
-    .call(zoom);
-
-    svg
-      .selectAll("lines")
-      .data(data)
-      .enter()
-      .append("path")
-      .attr("class", (d) => `${d.name}_g`)
-      .attr("d", (d) => line(d.data))
-      .attr("stroke", (d) => color(d.name))
-      .style("stroke-width", 4)
-      .style("fill", "none");
-
-    
-  };
-
-  addXY = (svg, height, xScale, yScale, width) => {
-    svg
-      .append("g")
-      .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.timeFormat("%m/%d")));
-    svg.append("g").call(d3.axisLeft(yScale).ticks(8).tickSize(-width));
-    svg
-      .selectAll(".tick>line")
-      .filter((d, i, e) => d !== 0)
-      .filter((d, i, e) => i < e.length)
-      .attr("stroke", "#EBEBEB");
-  };
-
-  addTitles = (svg, margin) => {
-    svg
+  addTitles = () => {
+    this.chart.svg
       .append("text")
       .attr("text-anchor", "end")
-      .attr("x", margin.right)
-      .attr("y", -margin.bottom)
+      .attr("x", this.chart.margin.right)
+      .attr("y", -this.chart.margin.bottom)
       .text("趨勢圖(確診/死亡/治癒)");
-    svg
+    this.chart.svg
       .append("text")
       .attr("text-anchor", "end")
       .attr("transform", "rotate(-90)")
-      .attr("y", -margin.bottom * 2)
-      .attr("x", -margin.right / 2)
+      .attr("y", -this.chart.margin.bottom * 2)
+      .attr("x", -this.chart.margin.right / 2)
       .text("確診/死亡/治癒(總)");
   };
 
-  addSvg = (width, margin, height) => {
-    return d3
-      .select(this.gRef.current)
-      .append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-  };
 
-  addFocus = (svg, data, color, width, height, xScale, yScale) => {
+  addFocus = () => {
     const that = this;
-    const focusLine = svg
+    this.chart.focusLine = this.chart.lines
       .append("line")
       .attr("stroke", "#EBEBEB")
       .attr("stroke-dasharray", 2)
       .style("opacity", 0);
-    const focusCircle = svg
+    this.chart.focusCircle = this.chart.lines
       .selectAll("focusCircle")
-      .data(data)
+      .data(this.chart.data)
       .enter()
       .append("circle")
       .attr("class", (d) => `${d.name}_focusCircle`)
       .style("fill", "none")
-      .attr("stroke", (d) => color(d.name))
+      .attr("stroke", (d) => this.chart.color(d.name))
       .attr("r", 8.5)
       .style("opacity", 0);
-
-    const focusCard = d3.select("#focusCard");
-
-    svg
-      .append("rect")
-      .style("fill", "none")
-      .style("pointer-events", "all")
-      .attr("width", width)
-      .attr("height", height)
+    this.chart.focusCard = d3.select("#focusCard");
+    this.chart.lines
       .on("mouseover", () => {
-        focusCircle.each(function (element, item) {
+        this.chart.focusCircle.each(function (element, item) {
           if (_.find(that.state.selectedData, (o) => o.name === element.name)) {
             d3.select(this).style("opacity", 1);
           }
         });
-        focusLine.style("opacity", 1);
+        this.chart.focusLine.style("opacity", 1);
         if (that.state.selectedData.length > 1) {
-          focusCard.style("opacity", 1);
+          this.chart.focusCard.style("opacity", 1);
         }
       })
       .on("mousemove", function () {
         const mouse = d3.mouse(this);
-        const x = xScale.invert(mouse[0]);
-        const y = yScale.invert(mouse[1]);
-
-        focusCard.style("left", `${xScale(x) + 150}px`);
-        focusCard.style("top", `${yScale(y)}px`);
-
+        const x = that.chart.xScale.invert(mouse[0]);
+        const y = that.chart.yScale.invert(mouse[1]);
+        that.chart.focusCard.style("left", `${that.chart.xScale(x) + 150}px`);
+        that.chart.focusCard.style("top", `${that.chart.yScale(y)}px`);
         const selectedX = _.find(
-          _.first(data).data,
+          _.first(that.chart.data).data,
           (o) => o.lastUpdate.toDateString() === x.toDateString()
         );
 
-        focusLine
-          .attr("x1", xScale(selectedX.lastUpdate))
-          .attr("x2", xScale(selectedX.lastUpdate))
-          .attr("y1", 0)
-          .attr("y2", height);
+        if (selectedX) {
+          const focusData = [];
+          that.chart.focusLine
+            .attr("x1", that.chart.xScale(selectedX.lastUpdate))
+            .attr("x2", that.chart.xScale(selectedX.lastUpdate))
+            .attr("y1", 0)
+            .attr("y2", that.chart.height);
 
-        const focusData = [];
-        focusCircle.each(function (element, item) {
-          if (_.find(that.state.selectedData, (o) => o.name === element.name)) {
-            const selectedData = _.find(
-              element.data,
-              (o) => o.lastUpdate.toDateString() === x.toDateString()
-            );
-            focusData.push(
-              _.merge(
-                { name: element.name, color: color(element.name) },
-                selectedData
-              )
-            );
-            d3.select(this)
-              .attr("cx", xScale(selectedData.lastUpdate))
-              .attr("cy", yScale(selectedData.value));
-          }
-        });
-
-        that.setState({ focusData: focusData });
+          that.chart.focusCircle.each(function (element, item) {
+            if (
+              _.find(that.state.selectedData, (o) => o.name === element.name)
+            ) {
+              const selectedData = _.find(
+                element.data,
+                (o) => o.lastUpdate.toDateString() === x.toDateString()
+              );
+              focusData.push(
+                _.merge(
+                  { name: element.name, color: that.chart.color(element.name) },
+                  selectedData
+                )
+              );
+              d3.select(this)
+                .attr("cx", that.chart.xScale(selectedData.lastUpdate))
+                .attr("cy", that.chart.yScale(selectedData.value));
+            }
+          });
+          that.setState({ focusData: focusData });
+        }
       })
       .on("mouseout", () => {
-        focusCircle.style("opacity", 0);
-        focusLine.style("opacity", 0);
-        focusCard.style("opacity", 0);
+        this.chart.focusCircle.style("opacity", 0);
+        this.chart.focusLine.style("opacity", 0);
+        this.chart.focusCard.style("opacity", 0);
       });
   };
+
+  addBrushing = () => {
+    this.chart.clip = this.chart.svg
+      .append("defs")
+      .append("svg:clipPath")
+      .attr("id", "clip")
+      .append("svg:rect")
+      .attr("width", this.chart.width)
+      .attr("height", this.chart.height)
+      .attr("x", 0)
+      .attr("y", 0);
+    this.chart.brush = d3
+      .brushX()
+      .extent([
+        [0, 0],
+        [this.chart.width, this.chart.height],
+      ])
+      .on("end", () => this.updateChart());
+
+    this.chart.lines.append("g").attr("class", "brush").call(this.chart.brush);
+
+    this.chart.svg.on("dblclick", ()=> {
+      this.chart.xScale.domain(this.chart.xExtent);
+      this.chart.xAxis.transition().call(d3.axisBottom(this.chart.xScale));
+      this.chart.svg
+        .selectAll(".line_g")
+        .transition()
+        .attr("d", (d) => this.chart.lineGen(d.data));
+      this.chart.svg
+        .selectAll(".dot_g")
+        .transition()
+        .duration(1000)
+        .attr("cx", (d) => this.chart.xScale(d.lastUpdate))
+        .attr("cy", (d) => this.chart.yScale(d.value));
+    });
+  };
+
+    addSvg=()=>{
+        this.chart.margin = { top: 50, right: 150, bottom: 30, left: 100 };
+        this.chart.width =
+            window.screen.width - this.chart.margin.left - this.chart.margin.right;
+        this.chart.height = 400 - this.chart.margin.top - this.chart.margin.bottom;
+   
+        this.chart.svg = d3
+            .select(this.gRef.current)
+            .append("svg")
+            .attr("width", this.chart.width + this.chart.margin.left + this.chart.margin.right)
+            .attr("height", this.chart.height + this.chart.margin.top + this.chart.margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" +
+                this.chart.margin.left +
+                "," +
+                this.chart.margin.top +
+                ")");
+    }
+
+  addXY() {
+    this.chart.xExtent = d3.extent(
+      _.first(this.chart.data).data,
+      (d) => d.lastUpdate
+    );
+    this.chart.xScale = d3
+      .scaleTime()
+      .domain(this.chart.xExtent)
+      .range([10, this.chart.width - 10]);
+    this.chart.maxY = d3.max(_.first(this.chart.data).data, (o) => o.value);
+    this.chart.yScale = d3
+      .scaleLinear()
+      .domain([0, this.chart.maxY])
+      .range([this.chart.height, 10]);
+    this.chart.xAxis = this.chart.svg
+      .append("g")
+      .attr("transform", "translate(0," + this.chart.height + ")")
+      .call(
+        d3
+          .axisBottom(this.chart.xScale)
+          .ticks(10)
+          .tickFormat(d3.timeFormat("%m/%d"))
+      );
+    this.chart.yAxis = this.chart.svg
+      .append("g")
+      .call(
+        d3.axisLeft(this.chart.yScale).ticks(8).tickSize(-this.chart.width)
+      );
+    this.chart.xAxis.selectAll("path").attr("stroke", "none");
+    this.chart.yAxis.selectAll("path").attr("stroke", "none");
+    this.chart.yAxis
+      .selectAll(".tick>line")
+      .filter((d, i, e) => d !== 0)
+      .filter((d, i, e) => i < e.length)
+      .attr("stroke", "#EBEBEB");
+  }
 
   render() {
     return (
@@ -309,7 +387,7 @@ export default class TotalStatLineChart extends Component {
         <div
           id="focusCard"
           className="card border-secondary"
-          style={{ maxWidth: "18rem", opacity: 0, position: "absolute" }}
+          style={{ width: "250px", opacity: 0, position: "absolute" }}
         >
           <div className="card-header font-weight-bold">
             {this.state?.focusData[0]?.lastUpdate.toISOString().slice(0, 10)}
