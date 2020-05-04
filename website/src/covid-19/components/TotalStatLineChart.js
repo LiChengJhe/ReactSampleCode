@@ -141,28 +141,29 @@ export default class TotalStatLineChart extends Component {
       });
 
       
-//  const clip = svg.append("defs").append("SVG:clipPath")
-//       .attr("id", "clip")
-//       .append("SVG:rect")
-//       .attr("width", width )
-//       .attr("height", height )
-//       .attr("x", 0)
-//       .attr("y", 0);
+ const clip = svg.append("defs").append("SVG:clipPath")
+      .attr("id", "clip")
+      .append("SVG:rect")
+      .attr("width", width )
+      .attr("height", height )
+      .attr("x", 0)
+      .attr("y", 0);
 
-//   const zoom = d3.zoom()
-//       .scaleExtent([.5, 20]) 
-//       .extent([[0, 0], [width, height]])
-//       .on("zoom",()=>{console.log(1);});
+  const zoom = d3.zoom()
+      .scaleExtent([.5, 20]) 
+      .extent([[0, 0], [width, height]])
+      .on("zoom",()=>{console.log(1);});
 
-  //  svg.append('g').attr("clip-path", "url(#clip)") ;
+   svg.append('g').attr("clip-path", "url(#clip)") ;
 
-    // svg.append("rect")
-    // .attr("width", width)
-    // .attr("height", height)
-    // .style("fill", "none")
-    // .style("pointer-events", "all")
-    // .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
-    // .call(zoom);
+    svg.append("rect")
+    .attr("width", width)
+    .attr("height", height)
+    .style("fill", "none")
+    .style("pointer-events", "all")
+    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')')
+    .on("mousemove", function () {console.log(2);})
+    .call(zoom);
 
     svg
       .selectAll("lines")
