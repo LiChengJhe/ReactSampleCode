@@ -1,6 +1,5 @@
 import React, { Component } from "react";
 import * as d3 from "d3";
-import "./TotalStatLineChart.css";
 import _ from "lodash";
 
 export default class TotalStatLineChart extends Component {
@@ -38,13 +37,13 @@ export default class TotalStatLineChart extends Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if (this.props.stat && prevProps.stat !== this.props.stat) {
-      this.draw(this.getSeries(this.props.stat));
+    if (this.props.globalStats && prevProps.globalStats !== this.props.globalStats) {
+      this.draw(this.getSeries(this.props.globalStats));
     }
   }
 
   draw = (data) => {
-    this.chart={};
+    this.chart = {};
     this.chart.data = data;
     this.addSvg();
     this.addTitles();
@@ -54,7 +53,7 @@ export default class TotalStatLineChart extends Component {
     this.addFocus();
     this.addLegend();
   };
-  
+
   idled = () => {
     this.chart.idleTimeout = null;
   };
@@ -100,9 +99,9 @@ export default class TotalStatLineChart extends Component {
       .enter()
       .append("g")
       .on("click", (d) => {
-        const line = d3.selectAll(`.${d.name}_g`);
+        const line = this.chart.svg.selectAll(`.${d.name}_g`);
         const curOpacity = Number(line.style("opacity"));
-        const checkbox = d3.selectAll(`.${d.name}_checkbox`);
+        const checkbox = this.chart.svg.selectAll(`.${d.name}_checkbox`);
         line.transition().style("opacity", curOpacity === 1 ? 0 : 1);
 
         if (curOpacity === 1) {
@@ -145,11 +144,10 @@ export default class TotalStatLineChart extends Component {
   };
 
   addLines = () => {
-
     this.chart.color = d3
-    .scaleOrdinal()
-    .domain(_.map(this.chart.data, (o) => o.name))
-    .range(d3.schemeSet2);
+      .scaleOrdinal()
+      .domain(_.map(this.chart.data, (o) => o.name))
+      .range(d3.schemeSet2);
 
     this.chart.lineGen = d3
       .line()
@@ -209,7 +207,6 @@ export default class TotalStatLineChart extends Component {
       .text("確診/死亡/治癒(總)");
   };
 
-
   addFocus = () => {
     const that = this;
     this.chart.focusLine = this.chart.lines
@@ -227,7 +224,7 @@ export default class TotalStatLineChart extends Component {
       .attr("stroke", (d) => this.chart.color(d.name))
       .attr("r", 8.5)
       .style("opacity", 0);
-    this.chart.focusCard = d3.select("#focusCard");
+    this.chart.focusCard =  d3.select(this.gRef.current).select(".focusCard");
     this.chart.lines
       .on("mouseover", () => {
         this.chart.focusCircle.each(function (element, item) {
@@ -308,7 +305,7 @@ export default class TotalStatLineChart extends Component {
 
     this.chart.lines.append("g").attr("class", "brush").call(this.chart.brush);
 
-    this.chart.svg.on("dblclick", ()=> {
+    this.chart.svg.on("dblclick", () => {
       this.chart.xScale.domain(this.chart.xExtent);
       this.chart.xAxis.transition().call(d3.axisBottom(this.chart.xScale));
       this.chart.svg
@@ -324,24 +321,33 @@ export default class TotalStatLineChart extends Component {
     });
   };
 
-    addSvg=()=>{
-        this.chart.margin = { top: 50, right: 150, bottom: 30, left: 100 };
-        this.chart.width =
-            window.screen.width - this.chart.margin.left - this.chart.margin.right;
-        this.chart.height = 400 - this.chart.margin.top - this.chart.margin.bottom;
-   
-        this.chart.svg = d3
-            .select(this.gRef.current)
-            .append("svg")
-            .attr("width", this.chart.width + this.chart.margin.left + this.chart.margin.right)
-            .attr("height", this.chart.height + this.chart.margin.top + this.chart.margin.bottom)
-            .append("g")
-            .attr("transform", "translate(" +
-                this.chart.margin.left +
-                "," +
-                this.chart.margin.top +
-                ")");
-    }
+  addSvg = () => {
+    this.chart.margin = { top: 50, right: 150, bottom: 30, left: 100 };
+    this.chart.width =
+      window.screen.width - this.chart.margin.left - this.chart.margin.right;
+    this.chart.height = 400 - this.chart.margin.top - this.chart.margin.bottom;
+
+    this.chart.svg = d3
+      .select(this.gRef.current)
+      .append("svg")
+      .attr(
+        "width",
+        this.chart.width + this.chart.margin.left + this.chart.margin.right
+      )
+      .attr(
+        "height",
+        this.chart.height + this.chart.margin.top + this.chart.margin.bottom
+      )
+      .append("g")
+      .attr(
+        "transform",
+        "translate(" +
+          this.chart.margin.left +
+          "," +
+          this.chart.margin.top +
+          ")"
+      );
+  };
 
   addXY() {
     this.chart.xExtent = d3.extent(
@@ -373,8 +379,7 @@ export default class TotalStatLineChart extends Component {
       );
     this.chart.xAxis.selectAll("path").attr("stroke", "none");
     this.chart.yAxis.selectAll("path").attr("stroke", "none");
-    this.chart.yAxis
-      .selectAll(".tick>line")
+    this.chart.yAxis.selectAll(".tick>line")
       .filter((d, i, e) => d !== 0)
       .filter((d, i, e) => i < e.length)
       .attr("stroke", "#EBEBEB");
@@ -383,10 +388,9 @@ export default class TotalStatLineChart extends Component {
   render() {
     return (
       <>
-        <div ref={this.gRef}></div>
+        <div ref={this.gRef}>
         <div
-          id="focusCard"
-          className="card border-secondary"
+          className="card border-secondary focusCard"
           style={{ width: "250px", opacity: 0, position: "absolute" }}
         >
           <div className="card-header font-weight-bold">
@@ -410,6 +414,7 @@ export default class TotalStatLineChart extends Component {
               </p>
             ))}
           </div>
+        </div>
         </div>
       </>
     );

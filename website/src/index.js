@@ -12,7 +12,23 @@ import appReducers from './reducers';
 import { createStore } from 'redux'
 import { Provider } from 'react-redux'
 
-let store = createStore(appReducers)
+const getState = () => {
+  try {
+    const s = localStorage.getItem("state");
+
+    if (s === null) return undefined;
+    return JSON.parse(s);
+  } catch (e) {
+    return undefined;
+  }
+};
+const initialState = getState();
+let store = createStore(appReducers,initialState);
+store.subscribe(() => {
+  localStorage.setItem('state', JSON.stringify(store.getState()));
+})
+
+
 ReactDOM.render(
   <Provider store={store}>
     <React.StrictMode>

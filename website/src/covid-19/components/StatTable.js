@@ -1,60 +1,79 @@
 import React, { Component } from "react";
 import _ from "lodash";
 import { Table } from "antd";
-import { FieldType,getColSearchProps , getColProp } from "./../../utilities/TableUtility";
+import {
+  FieldType,
+  getColSearchProps,
+  getColProp,
+} from "./../../utilities/TableUtility";
 export default class StatTable extends Component {
   constructor(prop) {
     super(prop);
     this.state = {
-      searchText: '',
-      searchedColumn: '',
+      searchText: "",
+      searchedColumn: "",
     };
   }
 
   getTableCols = () => {
     return [
       {
-        ...getColProp("國家","country",{fieldType:FieldType.String}),
-        ...getColSearchProps("country",this),
+        ...getColProp("國家", "country", { fieldType: FieldType.String }),
+        ...getColSearchProps("country", this),
       },
       {
-        ...getColProp("確診(總)","totalConfirmed",{fieldType:FieldType.Number})
+        ...getColProp("確診(總)", "totalConfirmed", {
+          fieldType: FieldType.Number,
+        }),
       },
       {
-        ...getColProp("死亡(總)","totalDeaths",{fieldType:FieldType.Number})
+        ...getColProp("死亡(總)", "totalDeaths", {
+          fieldType: FieldType.Number,
+        }),
       },
       {
-        ...getColProp("治癒(總)","totalRecovered",{fieldType:FieldType.Number})
+        ...getColProp("治癒(總)", "totalRecovered", {
+          fieldType: FieldType.Number,
+        }),
       },
       {
-        ...getColProp("治癒率","recoveredRate",{
-            fieldType:FieldType.JSX,
-            callback:(a,b)=> a.recoveredRate.props.children[0]-b.recoveredRate.props.children[0]     
-        })
+        ...getColProp("治癒率", "recoveredRate", {
+          fieldType: FieldType.JSX,
+          callback: (a, b) =>
+            a.recoveredRate.props.children[0] -
+            b.recoveredRate.props.children[0],
+        }),
       },
       {
-        ...getColProp("輕症率","mildRate",{
-            fieldType:FieldType.JSX,
-            callback:(a,b)=> a.mildRate.props.children[0]-b.mildRate.props.children[0]     
-        })
+        ...getColProp("輕症率", "mildRate", {
+          fieldType: FieldType.JSX,
+          callback: (a, b) =>
+            a.mildRate.props.children[0] - b.mildRate.props.children[0],
+        }),
       },
       {
-        ...getColProp("重症率","criticalRate",{
-            fieldType:FieldType.JSX,
-            callback:(a,b)=> a.criticalRate.props.children[0]-b.criticalRate.props.children[0]     
-        })
+        ...getColProp("重症率", "criticalRate", {
+          fieldType: FieldType.JSX,
+          callback: (a, b) =>
+            a.criticalRate.props.children[0] - b.criticalRate.props.children[0],
+        }),
       },
       {
-        ...getColProp("死亡率","deathRate",{
-            fieldType:FieldType.JSX,
-            callback:(a,b)=> a.deathRate.props.children[0]-b.deathRate.props.children[0]     
-        })
+        ...getColProp("死亡率", "deathRate", {
+          fieldType: FieldType.JSX,
+          callback: (a, b) =>
+            a.deathRate.props.children[0] - b.deathRate.props.children[0],
+        }),
       },
       {
-        ...getColProp("確診(今日)","todayConfirmed",{fieldType:FieldType.Number})
+        ...getColProp("確診(今日)", "todayConfirmed", {
+          fieldType: FieldType.Number,
+        }),
       },
       {
-        ...getColProp("死亡(今日)","todayDeaths",{fieldType:FieldType.Number})
+        ...getColProp("死亡(今日)", "todayDeaths", {
+          fieldType: FieldType.Number,
+        }),
       },
     ];
   };
@@ -86,9 +105,6 @@ export default class StatTable extends Component {
     }
     return table;
   };
-
-
-
 
   render() {
     return (

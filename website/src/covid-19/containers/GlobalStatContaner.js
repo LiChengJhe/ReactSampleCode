@@ -11,6 +11,7 @@ import StatTable from "./../components/StatTable";
 import StatCard from "./../components/StatCard";
 import TotalStatLineChart from './../components/TotalStatLineChart';
 import { Row, Col } from "antd";
+import CountryStatBarChart from './../components/CountryStatBarChart';
 class GlobalStatContaner extends Component {
 
   componentDidMount() {
@@ -52,8 +53,13 @@ class GlobalStatContaner extends Component {
           </Col>
         </Row>
         <Row>
+          <Col span={24}>
+            <CountryStatBarChart countryStats={this.props.global.countryStats} />
+          </Col>
+        </Row>
+        <Row>
           <Col span={12}>
-            <TotalStatLineChart stat={this.props.global.globalHistoricalStats} />
+            <TotalStatLineChart globalStats={this.props.global.globalHistoricalStats} />
           </Col>
         </Row>
         <Row >
