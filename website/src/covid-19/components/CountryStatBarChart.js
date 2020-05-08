@@ -14,7 +14,6 @@ export default class CountryStatBarChart extends Component {
       this.props.countryStats &&
       prevProps.countryStats !== this.props.countryStats
     ) {
-   
       this.draw(this.getSeries(this.props.countryStats, 10));
     }
   }
@@ -48,8 +47,7 @@ export default class CountryStatBarChart extends Component {
     this.addSvg();
     this.addTitles();
     this.addXY();
-    // this.addLines();
-    // this.addBrushing();
+    this.addBars();
     // this.addFocus();
     // this.addLegend();
   };
@@ -143,52 +141,29 @@ export default class CountryStatBarChart extends Component {
       .style("font-weight", "bold");
   };
 
-  addLines = () => {
-    this.chart.color = d3
-      .scaleOrdinal()
-      .domain(_.map(this.chart.data, (o) => o.name))
-      .range(d3.schemeSet2);
-
-    this.chart.lineGen = d3
-      .line()
-      .x((d) => {
-        return this.chart.xScale(d.lastUpdate);
-      })
-      .y((d) => {
-        return this.chart.yScale(d.value);
-      });
-
-    this.chart.lines = this.chart.svg
-      .append("g")
-      .attr("clip-path", "url(#clip)");
-
-    this.chart.lines
-      .selectAll("lines")
-      .data(this.chart.data)
+  addBars = () => {
+    this.chart.bars = this.chart.svg
+      .selectAll("bars")
+      .data(_.first(this.chart.data).data)
       .enter()
-      .append("path")
-      .attr("class", (d) => `${d.name}_g line_g`)
-      .attr("d", (d) => this.chart.lineGen(d.data))
-      .attr("stroke", (d) => this.chart.color(d.name))
-      .style("stroke-width", 4)
-      .style("fill", "none");
+      .append("g");
 
-    this.chart.lines
-      .selectAll("dots")
-      .data(this.chart.data)
-      .enter()
-      .append("g")
-      .attr("class", (d) => `${d.name}_g`)
-      .style("fill", (d) => this.chart.color(d.name))
-      .selectAll("points")
-      .data((d) => d.data)
-      .enter()
-      .append("circle")
-      .attr("class", (d) => `dot_g`)
-      .attr("cx", (d) => this.chart.xScale(d.lastUpdate))
-      .attr("cy", (d) => this.chart.yScale(d.value))
-      .attr("r", 5)
-      .attr("stroke", "white");
+    this.chart.bars
+      .append("rect")
+      .attr("x", 0)
+      .attr("y", (d) => this.chart.yScale(d.country))
+      .attr("width", (d) => this.chart.xScale(d.value))
+      .attr("height", this.chart.yScale.bandwidth())
+      .attr("fill", "#69b3a2");
+
+    this.chart.bars
+      .append("text")
+      .attr("x", (d) => this.chart.xScale(d.value))
+      .attr("y", (d) => this.chart.yScale(d.country) + 16)
+      .text((d) => d.value)
+      .style("fill", "#000000")
+      .style("font-size", 15)
+      .style("font-weight", "bold");
   };
 
   addTitles = () => {
@@ -285,42 +260,6 @@ export default class CountryStatBarChart extends Component {
       });
   };
 
-  addBrushing = () => {
-    this.chart.clip = this.chart.svg
-      .append("defs")
-      .append("svg:clipPath")
-      .attr("id", "clip")
-      .append("svg:rect")
-      .attr("width", this.chart.width)
-      .attr("height", this.chart.height)
-      .attr("x", 0)
-      .attr("y", 0);
-    this.chart.brush = d3
-      .brushX()
-      .extent([
-        [0, 0],
-        [this.chart.width, this.chart.height],
-      ])
-      .on("end", () => this.updateChart());
-
-    this.chart.lines.append("g").attr("class", "brush").call(this.chart.brush);
-
-    this.chart.svg.on("dblclick", () => {
-      this.chart.xScale.domain(this.chart.xExtent);
-      this.chart.xAxis.transition().call(d3.axisBottom(this.chart.xScale));
-      this.chart.svg
-        .selectAll(".line_g")
-        .transition()
-        .attr("d", (d) => this.chart.lineGen(d.data));
-      this.chart.svg
-        .selectAll(".dot_g")
-        .transition()
-        .duration(1000)
-        .attr("cx", (d) => this.chart.xScale(d.lastUpdate))
-        .attr("cy", (d) => this.chart.yScale(d.value));
-    });
-  };
-
   addSvg = () => {
     this.chart.margin = { top: 50, right: 150, bottom: 30, left: 100 };
     this.chart.width =
@@ -354,32 +293,30 @@ export default class CountryStatBarChart extends Component {
       _.first(this.chart.data).data,
       (d) => d.value
     );
-    console.log(this.chart.xExtent);
+
     this.chart.xScale = d3
       .scaleLinear()
       .domain(this.chart.xExtent)
-      .range([0, this.chart.width]);
+      .range([0, this.chart.width])
+      .nice();
 
     this.chart.yScale = d3
       .scaleBand()
       .domain(_.map(_.first(this.chart.data).data, (o) => o.country))
-      .range([ this.chart.height,0])
-      .padding(0.1);
+      .range([0, this.chart.height])
+      .padding(0.25);
 
     this.chart.xAxis = this.chart.svg
       .append("g")
-      .attr("transform", "translate(0," + this.chart.height + ")")
-      .call(
-        d3
-          .axisBottom(this.chart.xScale)
-          .ticks(10)
-      );
+      .attr("transform", `translate(0,${this.chart.height})`)
+      .call(d3.axisBottom(this.chart.xScale).ticks(15));
+    //   .selectAll("text")
+    //   .attr("transform", "translate(-10,0)rotate(-20)")
+    //   .style("text-anchor", "end");
+
     this.chart.yAxis = this.chart.svg
       .append("g")
-      .call(
-        d3.axisLeft(this.chart.yScale)
-      );
-
+      .call(d3.axisLeft(this.chart.yScale));
   }
 
   render() {

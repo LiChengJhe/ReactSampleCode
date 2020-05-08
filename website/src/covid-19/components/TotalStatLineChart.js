@@ -162,22 +162,19 @@ export default class TotalStatLineChart extends Component {
       .append("g")
       .attr("clip-path", "url(#clip)");
 
-    this.chart.lines
+      const lines =  this.chart.lines
       .selectAll("lines")
       .data(this.chart.data)
-      .enter()
-      .append("path")
+      .enter();
+
+      lines.append("path")
       .attr("class", (d) => `${d.name}_g line_g`)
       .attr("d", (d) => this.chart.lineGen(d.data))
       .attr("stroke", (d) => this.chart.color(d.name))
       .style("stroke-width", 4)
       .style("fill", "none");
 
-    this.chart.lines
-      .selectAll("dots")
-      .data(this.chart.data)
-      .enter()
-      .append("g")
+      lines.append("g")
       .attr("class", (d) => `${d.name}_g`)
       .style("fill", (d) => this.chart.color(d.name))
       .selectAll("points")
