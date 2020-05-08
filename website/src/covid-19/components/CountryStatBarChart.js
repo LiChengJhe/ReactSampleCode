@@ -20,26 +20,17 @@ export default class CountryStatBarChart extends Component {
 
   getSeries = (data, top) => {
     const topStats = _.chain(data)
-      .orderBy((o) => _.last(o.stats).Confirmed, "desc")
+      .orderBy((o) => _.last(o.stats).confirmed, "desc")
       .take(top)
       .value();
-    const confirmed = { name: "確診", data: [] };
+
     topStats.forEach((item) => {
       const last = _.last(item.stats);
-      confirmed.data.push({
-        value: last.confirmed,
-        country: item.country.name,
-      });
+      item.values = last;
     });
-    return [confirmed];
+    return topStats;
   };
-  getDate(stats) {
-    const confirmedDate = [];
-    stats.forEach((item) => {
-      confirmedDate.push(item.lastUpdate.toISOString());
-    });
-    return confirmedDate;
-  }
+
 
   draw = (data) => {
     this.chart = {};
@@ -47,7 +38,7 @@ export default class CountryStatBarChart extends Component {
     this.addSvg();
     this.addTitles();
     this.addXY();
-    this.addBars();
+   // this.addBars();
     // this.addFocus();
     // this.addLegend();
   };
@@ -182,83 +173,6 @@ export default class CountryStatBarChart extends Component {
       .text("國家");
   };
 
-  addFocus = () => {
-    const that = this;
-    this.chart.focusLine = this.chart.lines
-      .append("line")
-      .attr("stroke", "#EBEBEB")
-      .attr("stroke-dasharray", 2)
-      .style("opacity", 0);
-    this.chart.focusCircle = this.chart.lines
-      .selectAll("focusCircle")
-      .data(this.chart.data)
-      .enter()
-      .append("circle")
-      .attr("class", (d) => `${d.name}_focusCircle`)
-      .style("fill", "none")
-      .attr("stroke", (d) => this.chart.color(d.name))
-      .attr("r", 8.5)
-      .style("opacity", 0);
-    this.chart.focusCard = d3.select(this.gRef.current).select(".focusCard");
-    this.chart.lines
-      .on("mouseover", () => {
-        this.chart.focusCircle.each(function (element, item) {
-          if (_.find(that.state.selectedData, (o) => o.name === element.name)) {
-            d3.select(this).style("opacity", 1);
-          }
-        });
-        this.chart.focusLine.style("opacity", 1);
-        if (that.state.selectedData.length > 1) {
-          this.chart.focusCard.style("opacity", 1);
-        }
-      })
-      .on("mousemove", function () {
-        const mouse = d3.mouse(this);
-        const x = that.chart.xScale.invert(mouse[0]);
-        const y = that.chart.yScale.invert(mouse[1]);
-        that.chart.focusCard.style("left", `${that.chart.xScale(x) + 150}px`);
-        that.chart.focusCard.style("top", `${that.chart.yScale(y)}px`);
-        const selectedX = _.find(
-          _.first(that.chart.data).data,
-          (o) => o.lastUpdate.toDateString() === x.toDateString()
-        );
-
-        if (selectedX) {
-          const focusData = [];
-          that.chart.focusLine
-            .attr("x1", that.chart.xScale(selectedX.lastUpdate))
-            .attr("x2", that.chart.xScale(selectedX.lastUpdate))
-            .attr("y1", 0)
-            .attr("y2", that.chart.height);
-
-          that.chart.focusCircle.each(function (element, item) {
-            if (
-              _.find(that.state.selectedData, (o) => o.name === element.name)
-            ) {
-              const selectedData = _.find(
-                element.data,
-                (o) => o.lastUpdate.toDateString() === x.toDateString()
-              );
-              focusData.push(
-                _.merge(
-                  { name: element.name, color: that.chart.color(element.name) },
-                  selectedData
-                )
-              );
-              d3.select(this)
-                .attr("cx", that.chart.xScale(selectedData.lastUpdate))
-                .attr("cy", that.chart.yScale(selectedData.value));
-            }
-          });
-          that.setState({ focusData: focusData });
-        }
-      })
-      .on("mouseout", () => {
-        this.chart.focusCircle.style("opacity", 0);
-        this.chart.focusLine.style("opacity", 0);
-        this.chart.focusCard.style("opacity", 0);
-      });
-  };
 
   addSvg = () => {
     this.chart.margin = { top: 50, right: 150, bottom: 30, left: 100 };
@@ -290,8 +204,8 @@ export default class CountryStatBarChart extends Component {
 
   addXY() {
     this.chart.xExtent = d3.extent(
-      _.first(this.chart.data).data,
-      (d) => d.value
+     this.chart.data,
+      (d) => d.values.confirmed
     );
 
     this.chart.xScale = d3
@@ -302,7 +216,7 @@ export default class CountryStatBarChart extends Component {
 
     this.chart.yScale = d3
       .scaleBand()
-      .domain(_.map(_.first(this.chart.data).data, (o) => o.country))
+      .domain(_.map(this.chart.data, (o) => o.country.name))
       .range([0, this.chart.height])
       .padding(0.25);
 
