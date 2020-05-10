@@ -70,7 +70,7 @@ export default class TotalStatLineChart extends Component {
         this.chart.xScale.invert(extent[0]),
         this.chart.xScale.invert(extent[1]),
       ]);
-      this.chart.lines.select(".brush").call(this.chart.brush.move, null);
+      this.chart.lineArea.select(".brush").call(this.chart.brush.move);
     }
 
     this.chart.xAxis
@@ -78,13 +78,13 @@ export default class TotalStatLineChart extends Component {
       .duration(1000)
       .call(d3.axisBottom(this.chart.xScale));
 
-    this.chart.lines
+    this.chart.lineArea
       .selectAll(".line_g")
       .transition()
       .duration(1000)
       .attr("d", (d) => this.chart.lineGen(d.data));
 
-    this.chart.lines
+    this.chart.lineArea
       .selectAll(".dot_g")
       .transition()
       .duration(1000)
@@ -94,7 +94,8 @@ export default class TotalStatLineChart extends Component {
   addLegend = () => {
     this.setState({ selectedData: this.chart.data });
     const legendGroup = this.chart.svg
-      .selectAll("legend")
+      .append("g")
+      .selectAll("g")
       .data(this.chart.data)
       .enter()
       .append("g")
@@ -151,30 +152,27 @@ export default class TotalStatLineChart extends Component {
 
     this.chart.lineGen = d3
       .line()
-      .x((d) => {
-        return this.chart.xScale(d.lastUpdate);
-      })
-      .y((d) => {
-        return this.chart.yScale(d.value);
-      });
+      .x((d) => this.chart.xScale(d.lastUpdate))
+      .y((d) => this.chart.yScale(d.value));
 
-    this.chart.lines = this.chart.svg
+    this.chart.lineArea = this.chart.svg
       .append("g")
       .attr("clip-path", "url(#clip)");
 
-      const lines =  this.chart.lines
-      .selectAll("lines")
+    this.chart.lines = this.chart.lineArea
+      .append("g")
+      .selectAll("g")
       .data(this.chart.data)
       .enter();
 
-      lines.append("path")
+    this.chart.lines.append("path")
       .attr("class", (d) => `${d.name}_g line_g`)
       .attr("d", (d) => this.chart.lineGen(d.data))
       .attr("stroke", (d) => this.chart.color(d.name))
       .style("stroke-width", 4)
       .style("fill", "none");
 
-      lines.append("g")
+    this.chart.lines.append("g")
       .attr("class", (d) => `${d.name}_g`)
       .style("fill", (d) => this.chart.color(d.name))
       .selectAll("points")
@@ -206,13 +204,14 @@ export default class TotalStatLineChart extends Component {
 
   addFocus = () => {
     const that = this;
-    this.chart.focusLine = this.chart.lines
+    this.chart.focusLine = this.chart.lineArea
       .append("line")
       .attr("stroke", "#EBEBEB")
       .attr("stroke-dasharray", 2)
       .style("opacity", 0);
-    this.chart.focusCircle = this.chart.lines
-      .selectAll("focusCircle")
+    this.chart.focusCircle = this.chart.lineArea
+      .append("g")
+      .selectAll("g")
       .data(this.chart.data)
       .enter()
       .append("circle")
@@ -221,8 +220,8 @@ export default class TotalStatLineChart extends Component {
       .attr("stroke", (d) => this.chart.color(d.name))
       .attr("r", 8.5)
       .style("opacity", 0);
-    this.chart.focusCard =  d3.select(this.gRef.current).select(".focusCard");
-    this.chart.lines
+    this.chart.focusCard = d3.select(this.gRef.current).select(".focusCard");
+    this.chart.lineArea
       .on("mouseover", () => {
         this.chart.focusCircle.each(function (element, item) {
           if (_.find(that.state.selectedData, (o) => o.name === element.name)) {
@@ -300,7 +299,7 @@ export default class TotalStatLineChart extends Component {
       ])
       .on("end", () => this.updateChart());
 
-    this.chart.lines.append("g").attr("class", "brush").call(this.chart.brush);
+    this.chart.lineArea.append("g").attr("class", "brush").call(this.chart.brush);
 
     this.chart.svg.on("dblclick", () => {
       this.chart.xScale.domain(this.chart.xExtent);
@@ -336,33 +335,27 @@ export default class TotalStatLineChart extends Component {
         this.chart.height + this.chart.margin.top + this.chart.margin.bottom
       )
       .append("g")
-      .attr(
-        "transform",
-        "translate(" +
-          this.chart.margin.left +
-          "," +
-          this.chart.margin.top +
-          ")"
-      );
+      .attr("transform", `translate(${this.chart.margin.left},${this.chart.margin.top})`);
   };
 
   addXY() {
+    const first = _.first(this.chart.data);
     this.chart.xExtent = d3.extent(
-      _.first(this.chart.data).data,
+      first.data,
       (d) => d.lastUpdate
     );
     this.chart.xScale = d3
       .scaleTime()
       .domain(this.chart.xExtent)
       .range([10, this.chart.width - 10]);
-    this.chart.maxY = d3.max(_.first(this.chart.data).data, (o) => o.value);
+    this.chart.maxY = d3.max(first.data, (o) => o.value);
     this.chart.yScale = d3
       .scaleLinear()
       .domain([0, this.chart.maxY])
       .range([this.chart.height, 10]);
     this.chart.xAxis = this.chart.svg
       .append("g")
-      .attr("transform", "translate(0," + this.chart.height + ")")
+      .attr("transform", `translate(0,${this.chart.height})`)
       .call(
         d3
           .axisBottom(this.chart.xScale)
@@ -386,32 +379,32 @@ export default class TotalStatLineChart extends Component {
     return (
       <>
         <div ref={this.gRef}>
-        <div
-          className="card border-secondary focusCard"
-          style={{ width: "250px", opacity: 0, position: "absolute" }}
-        >
-          <div className="card-header font-weight-bold">
-            {this.state?.focusData[0]?.lastUpdate.toISOString().slice(0, 10)}
+          <div
+            className="card border-secondary focusCard"
+            style={{ width: "250px", opacity: 0, position: "absolute" }}
+          >
+            <div className="card-header font-weight-bold">
+              {this.state?.focusData[0]?.lastUpdate.toISOString().slice(0, 10)}
+            </div>
+            <div className="card-body text-secondary font-weight-bold">
+              {this.state.focusData.map((o) => (
+                <p key={o.name} className="card-text ">
+                  <span
+                    className="badge text-white"
+                    style={{ backgroundColor: o.color, marginRight: "5px" }}
+                  >
+                    &nbsp;&nbsp;&nbsp;
+                </span>
+                  <span style={{ color: o.color, marginRight: "15px" }}>
+                    {o.name}
+                  </span>
+                  <span style={{ color: o.color, marginRight: "15px" }}>
+                    {o.value}
+                  </span>
+                </p>
+              ))}
+            </div>
           </div>
-          <div className="card-body text-secondary font-weight-bold">
-            {this.state.focusData.map((o) => (
-              <p key={o.name} className="card-text ">
-                <span
-                  className="badge text-white"
-                  style={{ backgroundColor: o.color, marginRight: "5px" }}
-                >
-                  &nbsp;&nbsp;&nbsp;
-                </span>
-                <span style={{ color: o.color, marginRight: "15px" }}>
-                  {o.name}
-                </span>
-                <span style={{ color: o.color, marginRight: "15px" }}>
-                  {o.value}
-                </span>
-              </p>
-            ))}
-          </div>
-        </div>
         </div>
       </>
     );

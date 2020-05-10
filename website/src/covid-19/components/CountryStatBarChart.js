@@ -14,7 +14,7 @@ export default class CountryStatBarChart extends Component {
       this.props.countryStats &&
       prevProps.countryStats !== this.props.countryStats
     ) {
-      this.draw(this.getSeries(this.props.countryStats, 10));
+      this.draw(this.getSeries(this.props.countryStats, 5));
     }
   }
 
@@ -24,11 +24,26 @@ export default class CountryStatBarChart extends Component {
       .take(top)
       .value();
 
+    const topData = [];
     topStats.forEach((item) => {
       const last = _.last(item.stats);
+      topData.push({
+        country: item.country.name,
+        data: [{
+          name: '確診',
+          value: last.confirmed
+        }, {
+          name: '治癒',
+          value: last.confirmed * 0.9
+        },
+        {
+          name: '死亡',
+          value: last.confirmed * 0.7
+        }]
+      });
       item.values = last;
     });
-    return topStats;
+    return topData;
   };
 
 
@@ -38,122 +53,54 @@ export default class CountryStatBarChart extends Component {
     this.addSvg();
     this.addTitles();
     this.addXY();
-   // this.addBars();
-    // this.addFocus();
-    // this.addLegend();
-  };
-
-  idled = () => {
-    this.chart.idleTimeout = null;
-  };
-
-  updateChart = () => {
-    const extent = d3.event.selection;
-
-    if (!extent) {
-      if (!this.chart.idleTimeout)
-        return (this.chart.idleTimeout = setTimeout(this.idled, 350));
-      this.chart.xScale.domain(this.chart.xExtent);
-    } else {
-      this.chart.xScale.domain([
-        this.chart.xScale.invert(extent[0]),
-        this.chart.xScale.invert(extent[1]),
-      ]);
-      this.chart.lines.select(".brush").call(this.chart.brush.move, null);
-    }
-
-    this.chart.xAxis
-      .transition()
-      .duration(1000)
-      .call(d3.axisBottom(this.chart.xScale));
-
-    this.chart.lines
-      .selectAll(".line_g")
-      .transition()
-      .duration(1000)
-      .attr("d", (d) => this.chart.lineGen(d.data));
-
-    this.chart.lines
-      .selectAll(".dot_g")
-      .transition()
-      .duration(1000)
-      .attr("cx", (d) => this.chart.xScale(d.lastUpdate))
-      .attr("cy", (d) => this.chart.yScale(d.value));
-  };
-  addLegend = () => {
-    this.setState({ selectedData: this.chart.data });
-    const legendGroup = this.chart.svg
-      .selectAll("legend")
-      .data(this.chart.data)
-      .enter()
-      .append("g")
-      .on("click", (d) => {
-        const line = this.chart.svg.selectAll(`.${d.name}_g`);
-        const curOpacity = Number(line.style("opacity"));
-        const checkbox = this.chart.svg.selectAll(`.${d.name}_checkbox`);
-        line.transition().style("opacity", curOpacity === 1 ? 0 : 1);
-
-        if (curOpacity === 1) {
-          checkbox.style("fill", "white");
-          this.setState({
-            selectedData: _.filter(
-              this.state.selectedData,
-              (o) => o.name !== d.name
-            ),
-          });
-        } else {
-          checkbox.style("fill", this.chart.color(d.name));
-
-          this.setState({
-            selectedData: [d].concat(this.state.selectedData),
-          });
-        }
-      });
-    legendGroup
-      .append("rect")
-      .attr("class", (d) => `${d.name}_checkbox`)
-      .attr(
-        "x",
-        (d, i) => this.chart.width - this.chart.margin.right + i * 70 - 21
-      )
-      .attr("y", -this.chart.margin.bottom * 1.4)
-      .attr("width", 15)
-      .attr("height", 15)
-      .style("fill", (d) => this.chart.color(d.name))
-      .style("outline-color", (d) => this.chart.color(d.name))
-      .style("outline-style", "solid");
-    legendGroup
-      .append("text")
-      .attr("x", (d, i) => this.chart.width - this.chart.margin.right + i * 70)
-      .attr("y", -this.chart.margin.bottom)
-      .text((d) => d.name)
-      .style("fill", (d) => this.chart.color(d.name))
-      .style("font-size", 15)
-      .style("font-weight", "bold");
+    this.addBars();
+ 
   };
 
   addBars = () => {
-    this.chart.bars = this.chart.svg
-      .selectAll("bars")
-      .data(_.first(this.chart.data).data)
+    const first = _.first(this.chart.data);
+    const subgroups = _.chain(first.data).map((o) => o.name).value();
+    this.chart.color = d3
+      .scaleOrdinal()
+      .domain(subgroups)
+      .range(d3.schemeSet2);
+
+    const ySubgroup = d3.scaleBand()
+      .domain(subgroups)
+      .range([0, this.chart.yScale.bandwidth()])
+      .padding([0.05])
+
+    this.chart.barArea = this.chart.svg.append("g");
+    this.chart.barGroups = this.chart.barArea.selectAll("g")
+      .data(this.chart.data)
       .enter()
-      .append("g");
+      .append("g")
+      .attr("class", "barGroup")
+      .attr("transform", (d) => `translate(0,${this.chart.yScale(d.country)})`);
+
+    this.chart.bars = this.chart.barGroups
+      .selectAll(".bars")
+      .data((d) => d.data)
+      .enter()
+      .append("g")
+      .attr("class", "bars");
 
     this.chart.bars
       .append("rect")
-      .attr("x", 0)
-      .attr("y", (d) => this.chart.yScale(d.country))
+      .attr("x", (d) => 0)
+      .attr("y", (d) => ySubgroup(d.name))
       .attr("width", (d) => this.chart.xScale(d.value))
-      .attr("height", this.chart.yScale.bandwidth())
-      .attr("fill", "#69b3a2");
+      .attr("height", (d) => ySubgroup.bandwidth())
+      .attr("fill", (d) => this.chart.color(d.name));
+
 
     this.chart.bars
       .append("text")
       .attr("x", (d) => this.chart.xScale(d.value))
-      .attr("y", (d) => this.chart.yScale(d.country) + 16)
+      .attr("y", (d) => ySubgroup(d.name) + 13)
       .text((d) => d.value)
       .style("fill", "#000000")
-      .style("font-size", 15)
+      .style("font-size", 12)
       .style("font-weight", "bold");
   };
 
@@ -194,31 +141,25 @@ export default class CountryStatBarChart extends Component {
       .append("g")
       .attr(
         "transform",
-        "translate(" +
-          this.chart.margin.left +
-          "," +
-          this.chart.margin.top +
-          ")"
+        `translate(${this.chart.margin.left},${this.chart.margin.top})`
       );
   };
 
   addXY() {
-    this.chart.xExtent = d3.extent(
-     this.chart.data,
-      (d) => d.values.confirmed
-    );
 
+    const xMax = d3.max(_.first(this.chart.data).data, (d) => d.value);
+    const xMin = d3.min(_.last(this.chart.data).data, (d) => d.value);
     this.chart.xScale = d3
       .scaleLinear()
-      .domain(this.chart.xExtent)
+      .domain([xMin, xMax])
       .range([0, this.chart.width])
       .nice();
 
     this.chart.yScale = d3
       .scaleBand()
-      .domain(_.map(this.chart.data, (o) => o.country.name))
+      .domain(_.map(this.chart.data, (o) => o.country))
       .range([0, this.chart.height])
-      .padding(0.25);
+      .padding(0.2);
 
     this.chart.xAxis = this.chart.svg
       .append("g")
