@@ -1,24 +1,21 @@
-import React, { Component } from "react";
+import React, {  useEffect }  from "react";
 import { dataSourceService } from "../services/DataSourceService";
 import { map } from "rxjs/operators";
 import { forkJoin } from "rxjs";
 import { connect } from "react-redux";
 import {
-  ClearCountryStat,
-  SetCountryStat,
+  clearCountryStat,
+  setCountryStat,
 } from "./../store/actions/CountryStatAction";
 import { Form, Select } from "antd";
 import StatTable from './../components/StatTable';
 import StatCard from './../components/StatCard';
 
 const { Option } = Select;
-class CountryStatContainer extends Component {
-  componentDidMount() {
-    this.loadData((data) => {
-        this.onValuesChange({country:"TWN"});
-    });
-  }
-  loadData = (callback) => {
+function CountryStatContainer(props)  {
+ 
+
+ const loadData = (callback) => {
     forkJoin([dataSourceService.getCountries()])
       .pipe(
         map(([countries]) => {
@@ -26,7 +23,7 @@ class CountryStatContainer extends Component {
         })
       )
       .subscribe((data) => {
-        this.props.SetCountryStat({
+        props.setCountryStat({
           countries: data.countries,
         });
         if (callback) {
@@ -35,7 +32,7 @@ class CountryStatContainer extends Component {
       });
   };
 
-  onValuesChange = (values) => {
+  const onValuesChange = (values) => {
 
     forkJoin([
         dataSourceService.getCountryStat(values.country),
@@ -46,7 +43,7 @@ class CountryStatContainer extends Component {
           return { countryStat, historicalCountryStats };
         })
       ).subscribe((data) => {
-        this.props.SetCountryStat({
+        props.setCountryStat({
             selectedCountryStat:data.countryStat,
             selectedHistoricalCountryStats:data.historicalCountryStats
           });
@@ -55,18 +52,23 @@ class CountryStatContainer extends Component {
 
   };
 
-  render() {
+  useEffect(() => {
+    loadData((data) => {
+      onValuesChange({country:"TWN"});
+  });
+  }, []);
+
     return (
       <>
         <Form
           initialValues={{
             country: "TWN",
           }}
-          onValuesChange={this.onValuesChange}
+          onValuesChange={onValuesChange}
         >
           <Form.Item name={["country"]}>
             <Select placeholder="選擇國家">
-              {this.props?.countryStat?.countries?.map((o) => (
+              {props?.country?.countries?.map((o) => (
                 <Option key={o.name} value={o.iso3}>
                   {o.name}
                 </Option>
@@ -74,25 +76,25 @@ class CountryStatContainer extends Component {
             </Select>
           </Form.Item>
         </Form>
-        <StatCard stat={this.props.country?.selectedCountryStat?.stats[this.props.country?.selectedCountryStat?.stats.length-1]} />
-        <StatTable countryStats={this.props.country?.selectedCountryStat?[this.props.country.selectedCountryStat]:[]}/>
+        <StatCard stat={props.country?.selectedCountryStat?.stats[props.country?.selectedCountryStat?.stats.length-1]} />
+        <StatTable countryStats={props.country?.selectedCountryStat?[props.country.selectedCountryStat]:[]}/>
       </>
     );
   }
-}
+
 const mapStateToProps = (state) => {
   return {
-    country: state.CountryStatReducer,
+    country: state.countryStatReducer,
   };
 };
 
 const mapDispatchToProps = (dispatch) => {
   return {
-    SetCountryStat: (state) => {
-      dispatch(SetCountryStat(state));
+    setCountryStat: (state) => {
+      dispatch(setCountryStat(state));
     },
-    ClearCountryStat: () => {
-      dispatch(ClearCountryStat());
+    clearCountryStat: () => {
+      dispatch(clearCountryStat());
     },
   };
 };

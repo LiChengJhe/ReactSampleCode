@@ -1,23 +1,19 @@
-import React, { Component } from "react";
+import React, {  useEffect } from "react";
 import { dataSourceService } from "../services/DataSourceService";
 import { map } from "rxjs/operators";
 import { forkJoin } from "rxjs";
 import { connect } from "react-redux";
 import {
-  ClearGlobalStat,
-  SetGlobalStat,
+  clearGlobalStat,
+  setGlobalStat,
 } from "./../store/actions/GlobalStatAction";
 import StatTable from "./../components/StatTable";
 import StatCard from "./../components/StatCard";
 import TotalStatLineChart from './../components/TotalStatLineChart';
 import { Row, Col } from "antd";
 import CountryStatBarChart from './../components/CountryStatBarChart';
-class GlobalStatContaner extends Component {
-
-  componentDidMount() {
-    this.loadData((data) => { });
-  }
-  loadData = (callback) => {
+function GlobalStatContaner(props) {
+  const loadData = (callback) => {
     forkJoin([
       dataSourceService.getGlobalHistoricalStats(),
       dataSourceService.getCountryStats(),
@@ -33,7 +29,7 @@ class GlobalStatContaner extends Component {
         })
       )
       .subscribe((data) => {
-        this.props.SetGlobalStat({
+        props.setGlobalStat({
           globalStat: dataSourceService.countGlobalStat(data.countryStats),
           globalHistoricalStats: data.globalHistoricalStats,
           countryStats: data.countryStats,
@@ -44,46 +40,52 @@ class GlobalStatContaner extends Component {
         }
       });
   };
-  render() {
-    return (
-      <>
-        <Row>
-          <Col span={24}>
-            <StatCard stat={this.props.global.globalStat} />
-          </Col>
-        </Row>
-        <Row>
-          <Col span={24}>
-            <CountryStatBarChart countryStats={this.props.global.countryStats} />
-          </Col>
-        </Row>
-        <Row>
-          <Col span={12}>
-            <TotalStatLineChart globalStats={this.props.global.globalHistoricalStats} />
-          </Col>
-        </Row>
-        <Row >
-          <Col span={24}>
-            <StatTable countryStats={this.props.global.countryStats} />
-          </Col>
-        </Row>
-      </>
-    );
-  }
+
+  useEffect(() => {
+    loadData((data) => { });
+  }, []);
+
+ 
+
+  return (
+    <>
+      <Row>
+        <Col span={24}>
+          <StatCard stat={props.global.globalStat} />
+        </Col>
+      </Row>
+      <Row>
+        <Col span={24}>
+          <CountryStatBarChart countryStats={props.global.countryStats} />
+        </Col>
+      </Row>
+      <Row>
+        <Col span={12}>
+          <TotalStatLineChart globalStats={props.global.globalHistoricalStats} />
+        </Col>
+      </Row>
+      <Row >
+        <Col span={24}>
+          <StatTable countryStats={props.global.countryStats} />
+        </Col>
+      </Row>
+    </>
+  );
+
 }
 const mapStateToProps = (state) => {
   return {
-    global: state.GlobalStatReducer,
+    global: state.globalStatReducer,
   };
 };
 
 const mapDispatchToProps = (dispatch) => {
   return {
-    SetGlobalStat: (state) => {
-      dispatch(SetGlobalStat(state));
+    setGlobalStat: (state) => {
+      dispatch(setGlobalStat(state));
     },
-    ClearGlobalStat: () => {
-      dispatch(ClearGlobalStat());
+    clearGlobalStat: () => {
+      dispatch(clearGlobalStat());
     },
   };
 };

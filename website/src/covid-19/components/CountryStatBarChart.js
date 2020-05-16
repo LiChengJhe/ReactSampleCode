@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import * as d3 from "d3";
 import _ from "lodash";
+import { connectableObservableDescriptor } from "rxjs/internal/observable/ConnectableObservable";
 
 export default class CountryStatBarChart extends Component {
   chart;
@@ -175,6 +176,7 @@ export default class CountryStatBarChart extends Component {
   }
 
   render() {
+
     return (
       <>
         <div ref={this.gRef}>

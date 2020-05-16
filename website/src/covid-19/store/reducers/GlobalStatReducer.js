@@ -2,7 +2,7 @@
 import _ from 'lodash';
 import { GlobalStatActionType } from '../actions/GlobalStatAction';
 
-export const GlobalStatReducer = (
+export const globalStatReducer = (
     state = {
         globalStat: null,
         globalHistoricalStats: null,

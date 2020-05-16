@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { CountryStatActionType } from "../actions/CountryStatAction";
 
-export const CountryStatReducer = (
+export const countryStatReducer = (
   state = {
     countries: null,
     selectedCountryStat: null,

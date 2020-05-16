@@ -1,8 +1,8 @@
 import { combineReducers } from 'redux'
-import { GlobalStatReducer } from './../covid-19/store/reducers/GlobalStatReducer';
-import { CountryStatReducer } from './../covid-19/store/reducers/CountryStatReducer';
+import { globalStatReducer } from './../covid-19/store/reducers/GlobalStatReducer';
+import { countryStatReducer } from './../covid-19/store/reducers/CountryStatReducer';
 
 
-const appReducers = combineReducers({GlobalStatReducer,CountryStatReducer});
+const appReducers = combineReducers({globalStatReducer,countryStatReducer});
 
 export default appReducers
