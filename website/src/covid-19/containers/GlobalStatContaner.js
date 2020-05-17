@@ -90,4 +90,4 @@ const mapDispatchToProps = (dispatch) => {
   };
 };
 
-export default connect(mapStateToProps, mapDispatchToProps)(GlobalStatContaner);
+export default React.memo(connect(mapStateToProps, mapDispatchToProps)(GlobalStatContaner));

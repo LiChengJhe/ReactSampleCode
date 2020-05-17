@@ -7,7 +7,7 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import * as serviceWorker from './serviceWorker';
 import { BrowserRouter } from 'react-router-dom';
-import { App } from './App';
+import  App  from './App';
 import appReducers from './reducers';
 import { createStore } from 'redux'
 import { Provider } from 'react-redux'

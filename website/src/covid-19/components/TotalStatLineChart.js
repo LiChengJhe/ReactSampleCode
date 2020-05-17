@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import * as d3 from "d3";
 import _ from "lodash";
 
-export default function TotalStatLineChart(props) {
+
+export default React.memo(function TotalStatLineChart(props) {
   const chart = useRef({});
   const [focusData, setFocusData] = useState([]);
   const selectedData = useRef([]);
@@ -405,4 +406,4 @@ export default function TotalStatLineChart(props) {
       </div>
     </>
   );
-}
+});

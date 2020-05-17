@@ -4,7 +4,7 @@ import { Route } from 'react-router-dom';
 import GlobalPage from '../../covid-19/pages/GlobalPage';
 import CountryPage from '../../covid-19/pages/CountryPage';
 import { Switch } from 'react-router-dom';
-export function Content() {
+export default React.memo(function Content() {
         return (
             <Switch>
                 <Route path='/' exact component={GlobalPage} />
@@ -12,4 +12,4 @@ export function Content() {
                 <Route path='/country' component={CountryPage} />
             </Switch>
         );
-}
+})

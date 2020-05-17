@@ -1,7 +1,7 @@
 import React from 'react';
 import CountryStatContainer from './../containers/CountryStatContainer';
-export default function CountryPage() {
+export default React.memo(function CountryPage() {
         return (
             <CountryStatContainer/>
         );
-}
+});
