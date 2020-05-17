@@ -5,7 +5,7 @@ import { Grid } from '@material-ui/core';
 import Content from './layout/components/Content';
 import 'antd/dist/antd.css';
 import 'antd/es/date-picker/style/css';
-export default React.memo( function App() {
+export default  function App() {
   return (
 
     <Grid container spacing={0}>
@@ -18,7 +18,7 @@ export default React.memo( function App() {
     </Grid>
 
   );
-});
+};
 
 
 
